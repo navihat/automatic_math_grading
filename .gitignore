@@ -1,3 +1,11 @@
+# Data
+data/models/handwriting/
+data/models/rubric/
+data/uploads/
+
+# Codegraph
+.codegraph/
+
 # Python
 __pycache__/
 *.pyc
