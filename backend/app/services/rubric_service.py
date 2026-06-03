@@ -1,16 +1,14 @@
-import base64
 import json
 import io
 from typing import Optional
 
-from openai import OpenAI
+from google.genai import types
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.rubric import Rubric
 from app.schemas.rubric import RubricCreate, RubricUpdate
-
-_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+from app.services.ai.cilent import get_gemini_client
 
 _RUBRIC_PROMPT = (
     "Đây là tiêu chí chấm điểm (rubric) cho bài thi toán. "
@@ -28,24 +26,21 @@ _RUBRIC_PROMPT = (
 # --- nội bộ ---
 
 def _extract_from_image(file_bytes: bytes, media_type: str) -> dict:
-    b64 = base64.standard_b64encode(file_bytes).decode()
-    response = _client.chat.completions.create(
-        model="gpt-4o",
-        response_format={"type": "json_object"},
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": _RUBRIC_PROMPT},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:{media_type};base64,{b64}"},
-                    },
-                ],
-            }
+    client = get_gemini_client()
+    response = client.models.generate_content(
+        model="gemini-flash-latest",
+        contents=[
+            types.Part.from_bytes(
+                data=file_bytes,
+                mime_type=media_type,
+            ),
+            _RUBRIC_PROMPT,
         ],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
     )
-    return json.loads(response.choices[0].message.content)
+    return json.loads(response.text)
 
 
 def _extract_from_pdf(file_bytes: bytes) -> dict:
@@ -67,15 +62,17 @@ def _extract_from_pdf(file_bytes: bytes) -> dict:
             "Vui lòng upload ảnh chụp trang rubric."
         )
 
-    response = _client.chat.completions.create(
-        model="gpt-4o",
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": "Bạn là trợ lý trích xuất rubric chấm điểm."},
-            {"role": "user", "content": f"{_RUBRIC_PROMPT}\n\nNội dung:\n{text}"},
+    client = get_gemini_client()
+    response = client.models.generate_content(
+        model="gemini-flash-latest",
+        contents=[
+            f"Bạn là trợ lý trích xuất rubric chấm điểm.\n\n{_RUBRIC_PROMPT}\n\nNội dung:\n{text}"
         ],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
     )
-    return json.loads(response.choices[0].message.content)
+    return json.loads(response.text)
 
 
 # --- public ---

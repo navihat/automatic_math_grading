@@ -3,6 +3,9 @@ data/models/handwriting/
 data/models/rubric/
 data/uploads/
 
+# IDE
+.idea/
+
 # Codegraph
 .codegraph/
 

@@ -22,7 +22,7 @@ class Result(Base):
     submission = relationship("Submission", back_populates="results")
 
     # 1-1 with teacher feedback (optional - teacher can provide feedback)
-    teacher_feedback = relationship("Teacher_feedback", back_populates="result", uselist=False)
+    teacher_feedback = relationship("Teacher_feedback", back_populates="result", uselist=False, foreign_keys="Teacher_feedback.result_id")
 
 
 class Teacher_feedback(Base):
@@ -37,7 +37,7 @@ class Teacher_feedback(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # n-1 with result
-    result = relationship("Result", back_populates="teacher_feedback")
+    result = relationship("Result", back_populates="teacher_feedback", foreign_keys="Teacher_feedback.result_id")
 
     # n-1 with teacher (User)
     teacher = relationship("User", back_populates="feedbacks")
