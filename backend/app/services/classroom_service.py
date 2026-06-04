@@ -5,55 +5,91 @@ from app.models.classroom import Class, Student
 from app.schemas.classroom import ClassCreate, ClassUpdate, StudentCreate, StudentUpdate
 
 
-# --- Class ---
+# ── Class CRUD ────────────────────────────────────────────────
 
 def create_class(db: Session, data: ClassCreate) -> Class:
     """Tạo lớp học mới."""
-    pass
+    cls = Class(name=data.name, year=data.year, user_id=data.user_id)
+    db.add(cls)
+    db.commit()
+    db.refresh(cls)
+    return cls
 
 
 def get_class_by_id(db: Session, class_id: int) -> Optional[Class]:
     """Lấy lớp học theo ID, kèm danh sách học sinh."""
-    pass
+    return db.query(Class).filter(Class.id == class_id).first()
 
 
 def get_classes_by_teacher(db: Session, user_id: int) -> list[Class]:
     """Lấy tất cả lớp học của một giáo viên."""
-    pass
+    return db.query(Class).filter(Class.user_id == user_id).all()
 
 
 def update_class(db: Session, class_id: int, data: ClassUpdate) -> Optional[Class]:
     """Cập nhật thông tin lớp học."""
-    pass
+    cls = get_class_by_id(db, class_id)
+    if not cls:
+        return None
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(cls, field, value)
+    db.commit()
+    db.refresh(cls)
+    return cls
 
 
 def delete_class(db: Session, class_id: int) -> bool:
     """Xoá lớp học. Trả về True nếu xoá thành công."""
-    pass
+    cls = get_class_by_id(db, class_id)
+    if not cls:
+        return False
+    db.delete(cls)
+    db.commit()
+    return True
 
 
-# --- Student ---
+# ── Student CRUD ──────────────────────────────────────────────
 
 def add_student(db: Session, data: StudentCreate) -> Student:
     """Thêm học sinh vào một lớp."""
-    pass
+    student = Student(
+        name=data.name,
+        student_code=data.student_code,
+        class_id=data.class_id,
+    )
+    db.add(student)
+    db.commit()
+    db.refresh(student)
+    return student
 
 
 def get_student_by_id(db: Session, student_id: int) -> Optional[Student]:
     """Lấy thông tin học sinh theo ID."""
-    pass
+    return db.query(Student).filter(Student.id == student_id).first()
 
 
 def get_students_by_class(db: Session, class_id: int) -> list[Student]:
     """Lấy danh sách học sinh trong một lớp."""
-    pass
+    return db.query(Student).filter(Student.class_id == class_id).all()
 
 
 def update_student(db: Session, student_id: int, data: StudentUpdate) -> Optional[Student]:
     """Cập nhật thông tin học sinh."""
-    pass
+    student = get_student_by_id(db, student_id)
+    if not student:
+        return None
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(student, field, value)
+    db.commit()
+    db.refresh(student)
+    return student
 
 
 def remove_student(db: Session, student_id: int) -> bool:
     """Xoá học sinh. Trả về True nếu xoá thành công."""
-    pass
+    student = get_student_by_id(db, student_id)
+    if not student:
+        return False
+    db.delete(student)
+    db.commit()
+    return True

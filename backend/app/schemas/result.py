@@ -23,7 +23,7 @@ class TeacherFeedbackResponse(TeacherFeedbackBase):
     result_id: int
     user_id: int
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -50,7 +50,7 @@ class ResultResponse(ResultBase):
     submission_id: int
     teacher_feedback_id: Optional[int] = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

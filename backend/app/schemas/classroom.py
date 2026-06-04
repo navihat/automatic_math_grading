@@ -20,7 +20,7 @@ class StudentResponse(StudentBase):
     id: int
     class_id: int
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -44,7 +44,7 @@ class ClassResponse(ClassBase):
     id: int
     user_id: int
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
