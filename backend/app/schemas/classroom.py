@@ -53,3 +53,9 @@ class ClassResponse(ClassBase):
 class ClassWithRelations(ClassResponse):
     students: List[StudentResponse] = []
     assignments: List['AssignmentResponse'] = []
+
+
+from app.schemas.assignment import AssignmentResponse
+
+ClassWithRelations.model_rebuild()
+

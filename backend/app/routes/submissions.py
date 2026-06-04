@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.submission import SubmissionResponse
+from app.schemas.submission import SubmissionResponse, SubmissionWithRelations
 from app.services import submission_service
 from app.services.grading_orchestrator import grade_submission
 
@@ -51,13 +51,13 @@ async def submit_and_grade(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/rubric/{rubric_id}", response_model=List[SubmissionResponse])
+@router.get("/rubric/{rubric_id}", response_model=List[SubmissionWithRelations])
 def get_submissions_by_rubric(rubric_id: int, db: Session = Depends(get_db)):
     """Lấy tất cả bài nộp theo rubric."""
     return submission_service.get_submissions_by_rubric(db, rubric_id)
 
 
-@router.get("/student/{student_id}", response_model=List[SubmissionResponse])
+@router.get("/student/{student_id}", response_model=List[SubmissionWithRelations])
 def get_submissions_by_student(student_id: int, db: Session = Depends(get_db)):
     """Lấy tất cả bài nộp của một học sinh."""
     return submission_service.get_submissions_by_student(db, student_id)
@@ -70,6 +70,88 @@ def get_submission(submission_id: int, db: Session = Depends(get_db)):
     if not submission:
         raise HTTPException(status_code=404, detail="Submission không tồn tại.")
     return submission
+
+
+@router.post("/{submission_id}/regrade")
+async def regrade_submission(submission_id: int, db: Session = Depends(get_db)):
+    """
+    Chấm điểm lại bài làm viết tay đã nộp.
+    """
+    from app.services.submission_service import get_submission_by_id
+    from app.services.ai.step_grader import grade_student_work
+    from app.models.result import Result
+    from pathlib import Path
+    
+    submission = get_submission_by_id(db, submission_id)
+    if not submission:
+        raise HTTPException(status_code=404, detail="Bài nộp không tồn tại.")
+        
+    # Tìm đường dẫn file ảnh
+    filename = submission.image_url.split("/")[-1]
+    upload_dir = Path(__file__).resolve().parents[2] / "data" / "uploads"
+    file_path = upload_dir / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Không tìm thấy file ảnh bài nộp trên hệ thống.")
+        
+    file_bytes = file_path.read_bytes()
+    
+    # Xác định mime_type
+    ext = file_path.suffix.lower()
+    content_type = "image/jpeg"
+    if ext == ".png":
+        content_type = "image/png"
+    elif ext == ".webp":
+        content_type = "image/webp"
+    elif ext == ".gif":
+        content_type = "image/gif"
+        
+    try:
+        # Gọi AI chấm điểm lại
+        grading_result = grade_student_work(
+            image_bytes=file_bytes,
+            mime_type=content_type,
+            rubric_content=submission.rubric.content,
+        )
+        
+        # Cập nhật ocr_text của submission
+        submission.ocr_text = grading_result.get("ocr_text", "")
+        
+        # Tìm hoặc tạo Result
+        result = db.query(Result).filter(Result.submission_id == submission.id).first()
+        if not result:
+            result = Result(submission_id=submission.id, session_id=submission.session_id)
+            db.add(result)
+            
+        result.steps_json = grading_result.get("steps", {})
+        result.total_score = grading_result.get("total_score", 0)
+        result.confidence = grading_result.get("confidence", 0.0)
+        
+        db.commit()
+        db.refresh(submission)
+        db.refresh(result)
+        
+        return {
+            "submission": {
+                "id": submission.id,
+                "student_id": submission.student_id,
+                "rubric_id": submission.rubric_id,
+                "image_url": submission.image_url,
+                "ocr_text": submission.ocr_text,
+                "submitted_at": submission.submitted_at.isoformat() if submission.submitted_at else None,
+            },
+            "result": {
+                "id": result.id,
+                "submission_id": result.submission_id,
+                "steps_json": result.steps_json,
+                "total_score": result.total_score,
+                "confidence": result.confidence,
+                "created_at": result.created_at.isoformat() if result.created_at else None,
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Lỗi chấm bài bằng AI: {e}")
 
 
 @router.delete("/{submission_id}", status_code=204)

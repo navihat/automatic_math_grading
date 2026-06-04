@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../api';
 
 export default function ClassesPage() {
@@ -116,7 +117,10 @@ export default function ClassesPage() {
 
   return (
     <div className="animate-fade">
-      {toast && <div className={`toast toast-${toast.type}`}>{toast.message}</div>}
+      {toast && createPortal(
+        <div className={`toast toast-${toast.type}`}>{toast.message}</div>,
+        document.body
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: selectedClass ? '1fr 1.5fr' : '1fr', gap: 24 }}>
         {/* Classes List */}

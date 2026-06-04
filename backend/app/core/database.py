@@ -18,4 +18,31 @@ def get_db():
         db.close()
 
 def create_tables():
+    from sqlalchemy import text
     Base.metadata.create_all(bind=engine)
+    
+    # Auto-migration for password_hash columns
+    db = SessionLocal()
+    try:
+        # Check users table
+        db.execute(text("SELECT password_hash FROM users LIMIT 1"))
+    except Exception:
+        db.rollback()
+        try:
+            db.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR"))
+            db.commit()
+        except Exception:
+            db.rollback()
+            
+    try:
+        # Check students table
+        db.execute(text("SELECT password_hash FROM students LIMIT 1"))
+    except Exception:
+        db.rollback()
+        try:
+            db.execute(text("ALTER TABLE students ADD COLUMN password_hash VARCHAR"))
+            db.commit()
+        except Exception:
+            db.rollback()
+    finally:
+        db.close()

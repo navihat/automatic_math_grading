@@ -31,3 +31,11 @@ class UserWithRelations(UserResponse):
     classes: List['ClassResponse'] = []
     assignments: List['AssignmentResponse'] = []
     feedbacks: List['TeacherFeedbackResponse'] = []
+
+
+from app.schemas.classroom import ClassResponse
+from app.schemas.assignment import AssignmentResponse
+from app.schemas.result import TeacherFeedbackResponse
+
+UserWithRelations.model_rebuild()
+

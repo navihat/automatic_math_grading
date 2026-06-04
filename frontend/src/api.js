@@ -18,6 +18,9 @@ async function request(url, options = {}) {
 }
 
 export const api = {
+  // ── Auth ──
+  login: (username, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+
   // ── Classes ──
   getClasses: (userId = 1) => request(`/classes/teacher/${userId}`),
   getClass: (id) => request(`/classes/${id}`),
@@ -33,6 +36,7 @@ export const api = {
 
   // ── Assignments ──
   getAssignments: (userId = 1) => request(`/assignments/teacher/${userId}`),
+  getAssignmentsByClass: (classId) => request(`/assignments/class/${classId}`),
   getAssignment: (id) => request(`/assignments/${id}`),
   createAssignment: (data) => request('/assignments/', { method: 'POST', body: JSON.stringify(data) }),
   updateAssignment: (id, data) => request(`/assignments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -56,7 +60,9 @@ export const api = {
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'Chấm điểm thất bại');
       return r.json();
     }),
+  regradeSubmission: (submissionId) => request(`/submissions/${submissionId}/regrade`, { method: 'POST' }),
   getSubmissionsByRubric: (rubricId) => request(`/submissions/rubric/${rubricId}`),
+  getSubmissionsByStudent: (studentId) => request(`/submissions/student/${studentId}`),
   getSubmission: (id) => request(`/submissions/${id}`),
 
   // ── Results & Feedback ──

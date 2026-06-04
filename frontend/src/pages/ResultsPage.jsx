@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api';
 
 export default function ResultsPage() {
@@ -88,7 +89,10 @@ export default function ResultsPage() {
 
   return (
     <div className="animate-fade">
-      {toast && <div className={`toast toast-${toast.type}`}>{toast.message}</div>}
+      {toast && createPortal(
+        <div className={`toast toast-${toast.type}`}>{toast.message}</div>,
+        document.body
+      )}
 
       {/* Filter Bar */}
       <div className="card" style={{ marginBottom: 24 }}>

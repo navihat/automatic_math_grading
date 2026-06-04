@@ -13,6 +13,8 @@ from app.routes.classroom import router as classroom_router
 from app.routes.assignment import router as assignment_router
 from app.routes.submissions import router as submission_router
 from app.routes.review import router as review_router
+from app.routes.auth import router as auth_router
+from app.utils.security import hash_password
 
 UPLOAD_DIR = Path(__file__).resolve().parents[1] / "data" / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -36,6 +38,7 @@ async def lifespan(app: FastAPI):
                 role="teacher",
                 email="teacher@demo.com",
                 name="Giáo viên Demo",
+                password_hash=hash_password("admin123")
             ))
             db.commit()
     finally:
@@ -66,6 +69,7 @@ app.add_middleware(
 app.mount("/static/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # Register routers
+app.include_router(auth_router, prefix=settings.API_PREFIX)
 app.include_router(rubric_router, prefix=settings.API_PREFIX)
 app.include_router(classroom_router, prefix=settings.API_PREFIX)
 app.include_router(assignment_router, prefix=settings.API_PREFIX)

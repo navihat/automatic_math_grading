@@ -29,3 +29,9 @@ class RubricResponse(RubricBase):
 
 class RubricWithRelations(RubricResponse):
     submissions: List['SubmissionResponse'] = []
+
+
+from app.schemas.submission import SubmissionResponse
+
+RubricWithRelations.model_rebuild()
+

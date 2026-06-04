@@ -34,3 +34,11 @@ class SubmissionWithRelations(SubmissionResponse):
     student: Optional['StudentResponse'] = None
     rubric: Optional['RubricResponse'] = None
     results: List['ResultResponse'] = []
+
+
+from app.schemas.classroom import StudentResponse
+from app.schemas.rubric import RubricResponse
+from app.schemas.result import ResultResponse
+
+SubmissionWithRelations.model_rebuild()
+

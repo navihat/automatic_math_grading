@@ -11,6 +11,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     role = Column(String, index=True)
     email = Column(String, unique=True)
+    password_hash = Column(String, nullable=True)
     name = Column(String, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

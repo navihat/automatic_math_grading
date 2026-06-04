@@ -32,3 +32,10 @@ class AssignmentResponse(AssignmentBase):
 class AssignmentWithRelations(AssignmentResponse):
     rubric: Optional['RubricResponse'] = None
     classes: List['ClassResponse'] = []
+
+
+from app.schemas.rubric import RubricResponse
+from app.schemas.classroom import ClassResponse
+
+AssignmentWithRelations.model_rebuild()
+

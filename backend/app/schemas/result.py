@@ -59,3 +59,9 @@ class ResultResponse(ResultBase):
 class ResultWithRelations(ResultResponse):
     submission: Optional['SubmissionResponse'] = None
     teacher_feedback: Optional[TeacherFeedbackResponse] = None
+
+
+from app.schemas.submission import SubmissionResponse
+
+ResultWithRelations.model_rebuild()
+

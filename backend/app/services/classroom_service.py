@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.models.classroom import Class, Student
 from app.schemas.classroom import ClassCreate, ClassUpdate, StudentCreate, StudentUpdate
+from app.utils.security import hash_password
 
 
 # ── Class CRUD ────────────────────────────────────────────────
@@ -55,6 +56,7 @@ def add_student(db: Session, data: StudentCreate) -> Student:
     student = Student(
         name=data.name,
         student_code=data.student_code,
+        password_hash=hash_password(data.student_code),
         class_id=data.class_id,
     )
     db.add(student)

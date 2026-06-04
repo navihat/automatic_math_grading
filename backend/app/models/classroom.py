@@ -43,6 +43,7 @@ class Student(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     student_code = Column(String, index=True, unique=True)
+    password_hash = Column(String, nullable=True)
     class_id = Column(Integer, ForeignKey('classes.id'), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
