@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 
-export default function DashboardPage() {
+export default function DashboardPage({ teacherId }) {
   const [stats, setStats] = useState({ classes: 0, students: 0, assignments: 0, submissions: 0 });
   const [recentAssignments, setRecentAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDashboard();
-  }, []);
+  }, [teacherId]);
 
   async function loadDashboard() {
     try {
       const [classes, assignments] = await Promise.all([
-        api.getClasses(),
-        api.getAssignments(),
+        api.getClasses(teacherId),
+        api.getAssignments(teacherId),
       ]);
 
       // Count all students across all classes

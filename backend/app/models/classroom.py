@@ -41,6 +41,7 @@ class Student(Base):
     __tablename__ = 'students'
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), unique=True, nullable=True)
     name = Column(String, index=True)
     student_code = Column(String, index=True, unique=True)
     password_hash = Column(String, nullable=True)
@@ -50,6 +51,9 @@ class Student(Base):
 
     # n-1 with class
     class_obj = relationship("Class", back_populates="students")
+
+    # 1-1 with user account
+    user = relationship("User", back_populates="student_profile")
 
     # 1-n with submissions
     submissions = relationship("Submission", back_populates="student")

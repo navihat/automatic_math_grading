@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api';
 
-export default function GradingPage() {
+export default function GradingPage({ teacherId }) {
   const [assignments, setAssignments] = useState([]);
   const [classes, setClasses] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState('');
@@ -30,13 +30,13 @@ export default function GradingPage() {
 
   useEffect(() => {
     // Load initial listings
-    Promise.all([api.getAssignments(), api.getClasses()])
+    Promise.all([api.getAssignments(teacherId), api.getClasses(teacherId)])
       .then(([asmList, clsList]) => {
         setAssignments(asmList);
         setClasses(clsList);
       })
       .catch(() => {});
-  }, []);
+  }, [teacherId]);
 
   useEffect(() => {
     if (selectedAssignment && selectedClass) {
@@ -180,7 +180,7 @@ export default function GradingPage() {
     setSavingFeedback(true);
     const data = {
       result_id: result.id,
-      user_id: 1, // Default teacher ID
+      user_id: teacherId,
       final_score: parseFloat(overrideScore),
       note: feedbackNote || null
     };

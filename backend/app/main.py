@@ -14,6 +14,7 @@ from app.routes.assignment import router as assignment_router
 from app.routes.submissions import router as submission_router
 from app.routes.review import router as review_router
 from app.routes.auth import router as auth_router
+from app.routes.ocr import router as ocr_router
 from app.utils.security import hash_password
 
 UPLOAD_DIR = Path(__file__).resolve().parents[1] / "data" / "uploads"
@@ -75,6 +76,7 @@ app.include_router(classroom_router, prefix=settings.API_PREFIX)
 app.include_router(assignment_router, prefix=settings.API_PREFIX)
 app.include_router(submission_router, prefix=settings.API_PREFIX)
 app.include_router(review_router, prefix=settings.API_PREFIX)
+app.include_router(ocr_router, prefix=settings.API_PREFIX)
 
 if __name__ == "__main__":
     import uvicorn

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api';
 
-export default function ResultsPage() {
+export default function ResultsPage({ teacherId }) {
   const [assignments, setAssignments] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState('');
   const [rubrics, setRubrics] = useState([]);
@@ -16,8 +16,8 @@ export default function ResultsPage() {
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
-    api.getAssignments().then(setAssignments).catch(() => {});
-  }, []);
+    api.getAssignments(teacherId).then(setAssignments).catch(() => {});
+  }, [teacherId]);
 
   function showToast(msg, type = 'success') {
     setToast({ message: msg, type });
@@ -67,7 +67,7 @@ export default function ResultsPage() {
     const fd = new FormData(e.target);
     const data = {
       result_id: feedbackTarget.id,
-      user_id: 1,
+      user_id: teacherId,
       final_score: parseFloat(fd.get('final_score')),
       note: fd.get('note') || null,
     };

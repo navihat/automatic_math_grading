@@ -18,6 +18,7 @@ class StudentUpdate(BaseModel):
 
 class StudentResponse(StudentBase):
     id: int
+    user_id: Optional[int] = None
     class_id: int
     created_at: datetime
     updated_at: Optional[datetime] = None

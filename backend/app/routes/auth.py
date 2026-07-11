@@ -10,6 +10,28 @@ from app.utils.security import verify_password, hash_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
+def ensure_student_user(student: Student, db: Session) -> User:
+    """Create or sync the User account backing a student profile."""
+    if student.user:
+        user = student.user
+        user.role = "student"
+        user.name = student.name
+        if not user.password_hash and student.password_hash:
+            user.password_hash = student.password_hash
+        return user
+
+    user = User(
+        role="student",
+        email=None,
+        name=student.name,
+        password_hash=student.password_hash,
+    )
+    db.add(user)
+    db.flush()
+    student.user_id = user.id
+    return user
+
 @router.post("/login", response_model=LoginResponse)
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     """
@@ -38,6 +60,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         if verify_password(password, teacher.password_hash):
             return LoginResponse(
                 id=teacher.id,
+                user_id=teacher.id,
                 name=teacher.name,
                 username=teacher.email,
                 role="teacher",
@@ -52,24 +75,32 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     # 2. Thử đăng nhập dưới vai trò Học sinh
     student = db.query(Student).filter(Student.student_code == username).first()
     if student:
+        user = ensure_student_user(student, db)
+
         # Nếu chưa có password_hash, mật khẩu mặc định chính là student_code
-        if not student.password_hash:
+        if not user.password_hash:
             if password == student.student_code:
-                student.password_hash = hash_password(password)
+                user.password_hash = hash_password(password)
+                student.password_hash = user.password_hash
                 db.commit()
                 db.refresh(student)
+                db.refresh(user)
             else:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Mật khẩu học sinh không chính xác."
                 )
 
-        if verify_password(password, student.password_hash):
+        if verify_password(password, user.password_hash):
+            if student.password_hash != user.password_hash:
+                student.password_hash = user.password_hash
+                db.commit()
             return LoginResponse(
                 id=student.id,
+                user_id=user.id,
                 name=student.name,
                 username=student.student_code,
-                role="student",
+                role=user.role,
                 token=str(uuid.uuid4()),
                 class_id=student.class_id
             )

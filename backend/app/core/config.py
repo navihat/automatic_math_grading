@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = ""
 
     GEMINI_API_KEY: str = ""
+    OCR_PROVIDER: str = "gemini"
 
     @field_validator("ALLOWED_ORIGINS")
     def parse_allowed_origins(cls, v: str) -> List[str]:

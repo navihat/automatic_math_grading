@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../api';
 
-export default function ClassesPage() {
+export default function ClassesPage({ teacherId }) {
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [students, setStudents] = useState([]);
@@ -13,7 +13,7 @@ export default function ClassesPage() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [toast, setToast] = useState(null);
 
-  useEffect(() => { loadClasses(); }, []);
+  useEffect(() => { loadClasses(); }, [teacherId]);
 
   function showToast(message, type = 'success') {
     setToast({ message, type });
@@ -22,7 +22,7 @@ export default function ClassesPage() {
 
   async function loadClasses() {
     try {
-      const data = await api.getClasses();
+      const data = await api.getClasses(teacherId);
       setClasses(data);
     } catch (err) {
       showToast(err.message, 'error');
@@ -48,7 +48,7 @@ export default function ClassesPage() {
   async function handleSaveClass(e) {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const data = { name: fd.get('name'), year: parseInt(fd.get('year')), user_id: 1 };
+    const data = { name: fd.get('name'), year: parseInt(fd.get('year')), user_id: teacherId };
     try {
       if (editingClass) {
         await api.updateClass(editingClass.id, data);

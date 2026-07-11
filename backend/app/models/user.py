@@ -24,3 +24,6 @@ class User(Base):
 
     # 1-n with teacher feedback
     feedbacks = relationship("Teacher_feedback", back_populates="teacher")
+
+    # 1-1 with student profile (for users with role="student")
+    student_profile = relationship("Student", back_populates="user", uselist=False)

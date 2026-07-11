@@ -11,7 +11,9 @@ from app.models.rubric import Rubric
 from app.models.submission import Submission
 from app.models.result import Result
 from data.storage import storage
+from app.services.ai.ocr.factory import get_ocr_service
 from app.services.ai.step_grader import grade_student_work
+from app.core.config import settings
 
 
 def grade_submission(
@@ -44,13 +46,20 @@ def grade_submission(
         ext = "jpg"
     image_url = storage.upload(file_bytes, f"submission.{ext}")
 
-    # 3. Gọi AI chấm điểm
+    # 3. Thực hiện OCR riêng biệt trước khi chấm điểm
+    ocr_service = get_ocr_service(settings.OCR_PROVIDER)
+    try:
+        ocr_result = ocr_service.extract_text(image_bytes=file_bytes, mime_type=content_type)
+    except Exception as e:
+        raise RuntimeError(f"Lỗi khi trích xuất OCR: {e}")
+
     session_id = str(uuid.uuid4())
     try:
         grading_result = grade_student_work(
             image_bytes=file_bytes,
             mime_type=content_type,
             rubric_content=rubric.content,
+            ocr_text=ocr_result.ocr_text,
         )
     except Exception as e:
         raise RuntimeError(f"Lỗi khi chấm điểm bằng AI: {e}")

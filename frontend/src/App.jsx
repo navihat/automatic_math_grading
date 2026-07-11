@@ -74,6 +74,7 @@ export default function App() {
 
   // 3. Otherwise show teacher dashboard layout
   const meta = PAGE_META[page];
+  const teacherId = currentUser.user_id ?? currentUser.id;
 
   return (
     <div className="app-layout">
@@ -132,11 +133,11 @@ export default function App() {
           <p>{meta.desc}</p>
         </div>
         <div className="page-body">
-          {page === 'dashboard' && <DashboardPage />}
-          {page === 'classes' && <ClassesPage />}
-          {page === 'assignments' && <AssignmentsPage />}
-          {page === 'grading' && <GradingPage />}
-          {page === 'results' && <ResultsPage />}
+          {page === 'dashboard' && <DashboardPage teacherId={teacherId} />}
+          {page === 'classes' && <ClassesPage teacherId={teacherId} />}
+          {page === 'assignments' && <AssignmentsPage teacherId={teacherId} />}
+          {page === 'grading' && <GradingPage teacherId={teacherId} />}
+          {page === 'results' && <ResultsPage teacherId={teacherId} />}
         </div>
       </main>
     </div>

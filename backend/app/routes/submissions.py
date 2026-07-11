@@ -107,15 +107,22 @@ async def regrade_submission(submission_id: int, db: Session = Depends(get_db)):
         content_type = "image/gif"
         
     try:
-        # Gọi AI chấm điểm lại
+        # Thực hiện OCR riêng trước khi chấm lại
+        from app.services.ai.ocr.factory import get_ocr_service
+        from app.core.config import settings
+
+        ocr_service = get_ocr_service(settings.OCR_PROVIDER)
+        ocr_result = ocr_service.extract_text(image_bytes=file_bytes, mime_type=content_type)
+
         grading_result = grade_student_work(
             image_bytes=file_bytes,
             mime_type=content_type,
             rubric_content=submission.rubric.content,
+            ocr_text=ocr_result.ocr_text,
         )
-        
+
         # Cập nhật ocr_text của submission
-        submission.ocr_text = grading_result.get("ocr_text", "")
+        submission.ocr_text = ocr_result.ocr_text
         
         # Tìm hoặc tạo Result
         result = db.query(Result).filter(Result.submission_id == submission.id).first()

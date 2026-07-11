@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../api';
 
-export default function AssignmentsPage() {
+export default function AssignmentsPage({ teacherId }) {
   const [assignments, setAssignments] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [rubrics, setRubrics] = useState([]);
@@ -14,7 +14,7 @@ export default function AssignmentsPage() {
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState(null);
 
-  useEffect(() => { loadAssignments(); }, []);
+  useEffect(() => { loadAssignments(); }, [teacherId]);
 
   function showToast(msg, type = 'success') {
     setToast({ message: msg, type });
@@ -23,7 +23,7 @@ export default function AssignmentsPage() {
 
   async function loadAssignments() {
     try {
-      const data = await api.getAssignments();
+      const data = await api.getAssignments(teacherId);
       setAssignments(data);
     } catch (err) { showToast(err.message, 'error'); }
     finally { setLoading(false); }
@@ -44,7 +44,7 @@ export default function AssignmentsPage() {
       problem_text: fd.get('problem_text'),
       deadline: new Date(fd.get('deadline')).toISOString(),
       type: fd.get('type'),
-      user_id: 1,
+      user_id: teacherId,
     };
     try {
       if (editingAssignment) {

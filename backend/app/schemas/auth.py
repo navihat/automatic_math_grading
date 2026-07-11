@@ -7,6 +7,7 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(BaseModel):
     id: int
+    user_id: Optional[int] = None
     name: str
     username: str  # email hoặc student_code
     role: str      # "teacher" hoặc "student"

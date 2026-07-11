@@ -30,11 +30,14 @@ _FORMAT_OUTPUT = """{
 
 _GRADING_PROMPT_TEMPLATE = """Bạn là một giáo viên toán đang chấm bài viết tay của học sinh.
 
+## OCR EXTRACTED TEXT:
+{ocr_text}
+
 ## RUBRIC (Tiêu chí chấm điểm):
 {rubric_json}
 
 ## NHIỆM VỤ:
-1. **OCR**: Trích xuất TOÀN BỘ nội dung viết tay trong ảnh, bao gồm cả công thức toán học (chuyển về dạng LaTeX).
+1. Dùng nội dung OCR đã trích xuất ở trên làm tham chiếu.
 2. **Chấm điểm**: Đối chiếu bài làm với TỪNG tiêu chí trong rubric và cho điểm cụ thể.
 3. **Giải thích**: Với mỗi tiêu chí, nêu rõ lý do tại sao cho điểm đó (bước nào đúng, bước nào sai, thiếu gì).
 4. **Tổng điểm**: Tính tổng điểm từ các tiêu chí.
@@ -63,7 +66,12 @@ def _clean_json_text(text: str) -> str:
     return text
 
 
-def grade_student_work(image_bytes: bytes, mime_type: str, rubric_content: dict) -> dict:
+def grade_student_work(
+    image_bytes: bytes,
+    mime_type: str,
+    rubric_content: dict,
+    ocr_text: str | None = None,
+) -> dict:
     """
     Gọi Gemini API để chấm bài viết tay.
 
@@ -71,6 +79,7 @@ def grade_student_work(image_bytes: bytes, mime_type: str, rubric_content: dict)
         image_bytes: Dữ liệu ảnh bài làm (raw bytes)
         mime_type: MIME type (image/jpeg, image/png, ...)
         rubric_content: Dict chứa tiêu chí chấm điểm (từ Rubric.content)
+        ocr_text: Nếu có, văn bản OCR đã trích xuất từ ảnh.
 
     Returns:
         Dict chứa ocr_text, steps, total_score, confidence
@@ -79,21 +88,24 @@ def grade_student_work(image_bytes: bytes, mime_type: str, rubric_content: dict)
     prompt = _GRADING_PROMPT_TEMPLATE.format(
         rubric_json=rubric_json,
         format_output=_FORMAT_OUTPUT,
+        ocr_text=ocr_text or "",
     )
+
+    contents = [types.Part.from_bytes(data=image_bytes, mime_type=mime_type), prompt]
 
     client = get_gemini_client()
     response = client.models.generate_content(
         model="gemini-2.5-flash-preview-05-20",
-        contents=[
-            types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-            prompt,
-        ],
+        contents=contents,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
         ),
     )
 
     result = json.loads(_clean_json_text(response.text))
+
+    if ocr_text:
+        result.setdefault("ocr_text", ocr_text)
 
     # Đảm bảo các trường bắt buộc luôn tồn tại
     result.setdefault("ocr_text", "")

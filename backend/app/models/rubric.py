@@ -20,3 +20,6 @@ class Rubric(Base):
 
     # 1-n with submissions (One rubric used for multiple submissions)
     submissions = relationship("Submission", back_populates="rubric")
+
+    # 1-n with rubric evaluations
+    evaluations = relationship("RubricEvaluation", back_populates="rubric")

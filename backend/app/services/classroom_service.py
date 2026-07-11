@@ -1,6 +1,7 @@
 from typing import Optional
 from sqlalchemy.orm import Session
 
+from app.models.user import User
 from app.models.classroom import Class, Student
 from app.schemas.classroom import ClassCreate, ClassUpdate, StudentCreate, StudentUpdate
 from app.utils.security import hash_password
@@ -53,10 +54,21 @@ def delete_class(db: Session, class_id: int) -> bool:
 
 def add_student(db: Session, data: StudentCreate) -> Student:
     """Thêm học sinh vào một lớp."""
+    password_hash = hash_password(data.student_code)
+    user = User(
+        role="student",
+        email=None,
+        name=data.name,
+        password_hash=password_hash,
+    )
+    db.add(user)
+    db.flush()
+
     student = Student(
+        user_id=user.id,
         name=data.name,
         student_code=data.student_code,
-        password_hash=hash_password(data.student_code),
+        password_hash=password_hash,
         class_id=data.class_id,
     )
     db.add(student)
@@ -82,6 +94,8 @@ def update_student(db: Session, student_id: int, data: StudentUpdate) -> Optiona
         return None
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(student, field, value)
+        if field == "name" and student.user:
+            student.user.name = value
     db.commit()
     db.refresh(student)
     return student
@@ -92,6 +106,9 @@ def remove_student(db: Session, student_id: int) -> bool:
     student = get_student_by_id(db, student_id)
     if not student:
         return False
+    user = student.user
     db.delete(student)
+    if user:
+        db.delete(user)
     db.commit()
     return True
