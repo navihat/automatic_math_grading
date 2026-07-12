@@ -10,11 +10,11 @@ import LoginPage from './pages/LoginPage';
 import StudentDashboard from './pages/StudentDashboard';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', icon: '📊', label: 'Tổng quan' },
-  { id: 'classes', icon: '🏫', label: 'Lớp học' },
-  { id: 'assignments', icon: '📝', label: 'Bài tập & Rubric' },
-  { id: 'grading', icon: '🤖', label: 'Chấm điểm AI' },
-  { id: 'results', icon: '📋', label: 'Kết quả & Review' },
+  { id: 'dashboard', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>, label: 'Tổng quan' },
+  { id: 'classes', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, label: 'Lớp học' },
+  { id: 'assignments', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>, label: 'Bài tập & Rubric' },
+  { id: 'grading', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="3"/><line x1="15" y1="1" x2="15" y2="3"/><line x1="9" y1="21" x2="9" y2="23"/><line x1="15" y1="21" x2="15" y2="23"/><line x1="21" y1="9" x2="23" y2="9"/><line x1="21" y1="15" x2="23" y2="15"/><line x1="1" y1="9" x2="3" y2="9"/><line x1="1" y1="15" x2="3" y2="15"/></svg>, label: 'Chấm điểm AI' },
+  { id: 'results', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>, label: 'Kết quả & Review' },
 ];
 
 const PAGE_META = {
@@ -87,10 +87,33 @@ export default function App() {
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <div className="logo-icon">🧮</div>
+            <div className="logo-icon" style={{ background: 'none', boxShadow: 'none' }}>
+              <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 5L15 25V60C15 76.5 50 95 50 95C50 95 85 76.5 85 60V25L50 5Z" fill="url(#sidebarCrest)" stroke="#ffffff" strokeWidth="4"/>
+                <path d="M50 25V75M25 50H75" stroke="#ffffff" strokeWidth="6" strokeLinecap="round"/>
+                <circle cx="50" cy="50" r="10" fill="#ffb03a" />
+                <defs>
+                  <linearGradient id="sidebarCrest" x1="50" y1="5" x2="50" y2="95" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#0c647b"/>
+                    <stop offset="1" stopColor="#051b3d"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
             <div>
               <h1>Math Grading</h1>
               <div className="subtitle">AI Powered</div>
+            </div>
+          </div>
+
+          {/* User Profile Card right below logo */}
+          <div className="sidebar-user-card" style={{ marginTop: 20 }}>
+            <div className="sidebar-user-avatar fallback">
+              {currentUser.name.split(' ').pop().slice(0, 2).toUpperCase()}
+            </div>
+            <div className="sidebar-user-details">
+              <div className="sidebar-user-name">Hi, {currentUser.name.split(' ').pop()}</div>
+              <div className="sidebar-user-code">{currentUser.username}</div>
             </div>
           </div>
         </div>
@@ -109,28 +132,39 @@ export default function App() {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="user-info" style={{ justifyContent: 'space-between', width: '100%' }}>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <div className="user-avatar">
-                {currentUser.name.split(' ').pop().slice(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <div className="user-name">{currentUser.name}</div>
-                <div className="user-role">{currentUser.username}</div>
-              </div>
-            </div>
-            <button className="logout-btn" onClick={handleLogout} title="Đăng xuất">
-              🚪
-            </button>
-          </div>
+          <button 
+            className="btn btn-secondary btn-sm" 
+            onClick={handleLogout} 
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center', 
+              background: 'transparent', 
+              borderColor: 'var(--sidebar-border)', 
+              color: 'var(--sidebar-text-muted)' 
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Đăng xuất
+          </button>
         </div>
       </aside>
 
       {/* Main */}
       <main className="main-content">
         <div className="page-header">
-          <h2>{meta.title}</h2>
-          <p>{meta.desc}</p>
+          <div className="page-header-title">
+            <h2>{meta.title}</h2>
+            <p>{meta.desc}</p>
+          </div>
+          <div className="page-header-actions">
+            <button className="header-icon-btn" title="Thông báo">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span className="badge-dot"></span>
+            </button>
+            <button className="header-icon-btn" title="Tin nhắn">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
         </div>
         <div className="page-body">
           {page === 'dashboard' && <DashboardPage teacherId={teacherId} />}

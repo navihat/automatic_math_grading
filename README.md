@@ -49,7 +49,7 @@ uv run alembic upgrade head
 Khởi động server:
 
 ```bash
-uv run python -m app.main
+uv run python -m src.main
 ```
 
 API docs: http://localhost:8000/docs

@@ -31,7 +31,19 @@ export default function LoginPage({ onLoginSuccess }) {
     <div className="login-container animate-fade">
       <div className="login-card">
         <div className="login-header">
-          <div className="login-logo">🧮</div>
+          <div className="login-logo" style={{ filter: 'none', background: 'none', WebkitBackgroundClip: 'unset', WebkitTextFillColor: 'unset' }}>
+            <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', margin: '0 auto 12px' }}>
+              <path d="M50 5L15 25V60C15 76.5 50 95 50 95C50 95 85 76.5 85 60V25L50 5Z" fill="url(#crestGrad)" stroke="#051b3d" strokeWidth="4"/>
+              <path d="M50 25V75M25 50H75" stroke="#ffffff" strokeWidth="6" strokeLinecap="round"/>
+              <circle cx="50" cy="50" r="10" fill="#ffb03a" />
+              <defs>
+                <linearGradient id="crestGrad" x1="50" y1="5" x2="50" y2="95" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#0c647b"/>
+                  <stop offset="1" stopColor="#051b3d"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
           <h2>Math Grading AI</h2>
           <p>Hệ thống chấm điểm toán tự động</p>
         </div>
@@ -42,19 +54,19 @@ export default function LoginPage({ onLoginSuccess }) {
             className={`role-btn ${role === 'teacher' ? 'active' : ''}`}
             onClick={() => { setRole('teacher'); setUsername(''); setPassword(''); setError(''); }}
           >
-            🏫 Giáo viên
+            Giáo viên
           </button>
           <button
             type="button"
             className={`role-btn ${role === 'student' ? 'active' : ''}`}
             onClick={() => { setRole('student'); setUsername(''); setPassword(''); setError(''); }}
           >
-            🎓 Học sinh
+            Học sinh
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
-          {error && <div className="login-error-alert">⚠️ {error}</div>}
+          {error && <div className="login-error-alert">{error}</div>}
 
           <div className="form-group">
             <label className="form-label">

@@ -5,34 +5,47 @@
 
 :root {
   /* ── Colors ── */
-  --bg-base: #0a0a14;
-  --bg-surface: #111122;
-  --bg-elevated: #1a1a30;
-  --bg-hover: #222240;
-  --bg-active: #2a2a4a;
+  --bg-base: #edf3f7; /* Light gray-blue canvas background */
+  --bg-surface: #ffffff; /* White card surface */
+  --bg-elevated: #f4f8fa; /* Soft accent background for tables, headers */
+  --bg-hover: #e8eff3;
+  --bg-active: #cdeafd;
 
-  --border: rgba(139, 92, 246, 0.15);
-  --border-strong: rgba(139, 92, 246, 0.35);
+  /* Sidebar Theme matching the image */
+  --bg-sidebar: #051b3d; /* Deep navy sidebar */
+  --sidebar-border: #132d56;
+  --sidebar-text: #ffffff;
+  --sidebar-text-muted: #8fa0be;
+  --sidebar-item-bg: #cdeafd; /* Soft sky-blue active background */
+  --sidebar-item-text: #051b3d;
 
-  --accent: #8b5cf6;
-  --accent-light: #a78bfa;
-  --accent-dark: #7c3aed;
-  --accent-glow: rgba(139, 92, 246, 0.25);
-  --accent-bg: rgba(139, 92, 246, 0.08);
+  /* Highlight colors from design */
+  --color-teal: #0c647b; /* Course card teal */
+  --color-navy: #051b3d; /* Main navy header/body color */
+  --color-orange: #ffb03a; /* Semester tab highlight color */
+
+  --border: #d4e0e9;
+  --border-strong: #a9bdcf;
+
+  --accent: #051b3d; /* Navy is the primary interactive color */
+  --accent-light: #2563eb;
+  --accent-dark: #020b1a;
+  --accent-glow: rgba(5, 27, 61, 0.1);
+  --accent-bg: #e8eff3;
 
   --success: #10b981;
-  --success-bg: rgba(16, 185, 129, 0.1);
+  --success-bg: rgba(16, 185, 129, 0.08);
   --warning: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-bg: rgba(245, 158, 11, 0.08);
   --danger: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.1);
+  --danger-bg: rgba(239, 68, 68, 0.08);
   --info: #3b82f6;
-  --info-bg: rgba(59, 130, 246, 0.1);
+  --info-bg: rgba(59, 130, 246, 0.08);
 
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #0f172a;
+  --text-primary: #051b3d; /* Dark navy primary text */
+  --text-secondary: #5a738e; /* Slate gray secondary text */
+  --text-muted: #8ca3ba;
+  --text-inverse: #ffffff;
 
   /* ── Typography ── */
   --font: 'Inter', system-ui, -apple-system, sans-serif;
@@ -45,10 +58,10 @@
   --radius-xl: 20px;
 
   /* ── Shadows ── */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.15);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 12px rgba(18, 38, 63, 0.05);
+  --shadow-lg: 0 8px 30px rgba(18, 38, 63, 0.09);
+  --shadow-glow: 0 0 20px rgba(13, 100, 123, 0.05);
 
   /* ── Transitions ── */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -77,7 +90,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Subtle animated background gradient */
+/* Subtle background gradient for light theme */
 body::before {
   content: '';
   position: fixed;
@@ -86,8 +99,8 @@ body::before {
   width: 100vw;
   height: 100vh;
   background:
-    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(139, 92, 246, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(5, 27, 61, 0.03) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(12, 100, 123, 0.02) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
