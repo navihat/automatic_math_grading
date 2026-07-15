@@ -38,17 +38,31 @@ export function MixedLatex({ text, style }) {
 
 function splitMath(text) {
   const parts = [];
-  // Match $$...$$ first (display), then $...$  (inline)
-  const re = /(\$\$[\s\S]*?\$\$|\$(?:[^$\n\\]|\\.)*?\$)/g;
+  // Hỗ trợ 4 dạng delimiter:
+  //   $$...$$   → display  (KaTeX/Markdown)
+  //   $...$     → inline   (KaTeX/Markdown)
+  //   \[...\]   → display  (LaTeX/MathJax)
+  //   \(...\)   → inline   (LaTeX/MathJax)
+  const re = /(\$\$[\s\S]*?\$\$|\$(?:[^$\n\\]|\\.)*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g;
   let last = 0;
   let m;
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) {
       parts.push({ type: 'text', content: text.slice(last, m.index) });
     }
-    const block = m[0].startsWith('$$');
-    parts.push({ type: 'math', block, content: m[0].slice(block ? 2 : 1, block ? -2 : -1) });
-    last = m.index + m[0].length;
+    const raw = m[0];
+    let block, content;
+    if (raw.startsWith('$$')) {
+      block = true; content = raw.slice(2, -2);
+    } else if (raw.startsWith('\\[')) {
+      block = true; content = raw.slice(2, -2);
+    } else if (raw.startsWith('\\(')) {
+      block = false; content = raw.slice(2, -2);
+    } else {
+      block = false; content = raw.slice(1, -1);
+    }
+    parts.push({ type: 'math', block, content });
+    last = m.index + raw.length;
   }
   if (last < text.length) {
     parts.push({ type: 'text', content: text.slice(last) });

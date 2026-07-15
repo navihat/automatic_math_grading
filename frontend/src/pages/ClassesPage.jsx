@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { api } from '../api';
+import { useToast } from '../hooks/useToast';
+import Toast from '../components/ui/Toast';
+import Modal from '../components/ui/Modal';
+import LoadingState from '../components/ui/LoadingState';
+import EmptyState from '../components/ui/EmptyState';
 
 export default function ClassesPage({ teacherId }) {
   const [classes, setClasses] = useState([]);
@@ -11,14 +15,9 @@ export default function ClassesPage({ teacherId }) {
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
-  const [toast, setToast] = useState(null);
+  const { toast, showToast } = useToast();
 
   useEffect(() => { loadClasses(); }, [teacherId]);
-
-  function showToast(message, type = 'success') {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  }
 
   async function loadClasses() {
     try {
@@ -112,15 +111,12 @@ export default function ClassesPage({ teacherId }) {
   }
 
   if (loading) {
-    return <div className="loading-state"><div className="spinner spinner-lg"></div><span>Đang tải...</span></div>;
+    return <LoadingState />;
   }
 
   return (
     <div className="animate-fade">
-      {toast && createPortal(
-        <div className={`toast toast-${toast.type}`}>{toast.message}</div>,
-        document.body
-      )}
+      <Toast toast={toast} />
 
       <div style={{ display: 'grid', gridTemplateColumns: selectedClass ? '1fr 1.5fr' : '1fr', gap: 24 }}>
         {/* Classes List */}
@@ -132,11 +128,7 @@ export default function ClassesPage({ teacherId }) {
             </button>
           </div>
           {classes.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">🏫</div>
-              <h3>Chưa có lớp học</h3>
-              <p>Tạo lớp học đầu tiên</p>
-            </div>
+            <EmptyState icon="🏫" title="Chưa có lớp học" description="Tạo lớp học đầu tiên" />
           ) : (
             <table className="data-table">
               <thead>
@@ -178,11 +170,7 @@ export default function ClassesPage({ teacherId }) {
               </button>
             </div>
             {students.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">👨‍🎓</div>
-                <h3>Chưa có học sinh</h3>
-                <p>Thêm học sinh vào lớp {selectedClass.name}</p>
-              </div>
+              <EmptyState icon="👨‍🎓" title="Chưa có học sinh" description={`Thêm học sinh vào lớp ${selectedClass.name}`} />
             ) : (
               <table className="data-table">
                 <thead>
@@ -214,63 +202,51 @@ export default function ClassesPage({ teacherId }) {
 
       {/* Class Modal */}
       {showClassModal && (
-        <div className="modal-overlay" onClick={() => setShowClassModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingClass ? 'Sửa lớp học' : 'Thêm lớp học mới'}</h3>
-              <button className="modal-close" onClick={() => setShowClassModal(false)}>✕</button>
+        <Modal title={editingClass ? 'Sửa lớp học' : 'Thêm lớp học mới'} onClose={() => { setShowClassModal(false); setEditingClass(null); }}>
+          <form onSubmit={handleSaveClass}>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Tên lớp</label>
+                <input className="form-input" name="name" defaultValue={editingClass?.name || ''} placeholder="Ví dụ: 10A1" required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Năm học</label>
+                <input className="form-input" name="year" type="number" defaultValue={editingClass?.year || new Date().getFullYear()} required />
+              </div>
             </div>
-            <form onSubmit={handleSaveClass}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="form-label">Tên lớp</label>
-                  <input className="form-input" name="name" defaultValue={editingClass?.name || ''} placeholder="Ví dụ: 10A1" required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Năm học</label>
-                  <input className="form-input" name="year" type="number" defaultValue={editingClass?.year || new Date().getFullYear()} required />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowClassModal(false)}>Huỷ</button>
-                <button type="submit" className="btn btn-primary">{editingClass ? 'Cập nhật' : 'Tạo mới'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => { setShowClassModal(false); setEditingClass(null); }}>Huỷ</button>
+              <button type="submit" className="btn btn-primary">{editingClass ? 'Cập nhật' : 'Tạo mới'}</button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* Student Modal */}
       {showStudentModal && (
-        <div className="modal-overlay" onClick={() => setShowStudentModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingStudent ? 'Sửa học sinh' : 'Thêm học sinh'}</h3>
-              <button className="modal-close" onClick={() => setShowStudentModal(false)}>✕</button>
-            </div>
-            <form onSubmit={handleSaveStudent}>
-              <div className="modal-body">
+        <Modal title={editingStudent ? 'Sửa học sinh' : 'Thêm học sinh'} onClose={() => { setShowStudentModal(false); setEditingStudent(null); }}>
+          <form onSubmit={handleSaveStudent}>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Họ tên</label>
+                <input className="form-input" name="name" defaultValue={editingStudent?.name || ''} placeholder="Nguyễn Văn A" required />
+              </div>
+              {!editingStudent && (
                 <div className="form-group">
-                  <label className="form-label">Họ tên</label>
-                  <input className="form-input" name="name" defaultValue={editingStudent?.name || ''} placeholder="Nguyễn Văn A" required />
-                </div>
-                {!editingStudent && (
-                  <div className="form-group">
-                    <label className="form-label">Mã học sinh</label>
-                    <input className="form-input" name="student_code" placeholder="HS001" required />
-                    <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--text-muted)' }}>
-                      Mật khẩu mặc định = Mã học sinh (học sinh đăng nhập lần đầu bằng mã này)
-                    </div>
+                  <label className="form-label">Mã học sinh</label>
+                  <input className="form-input" name="student_code" placeholder="HS001" required />
+                  <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--text-muted)' }}>
+                    Mật khẩu mặc định = Mã học sinh (học sinh đăng nhập lần đầu bằng mã này)
                   </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowStudentModal(false)}>Huỷ</button>
-                <button type="submit" className="btn btn-primary">{editingStudent ? 'Cập nhật' : 'Thêm'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => { setShowStudentModal(false); setEditingStudent(null); }}>Huỷ</button>
+              <button type="submit" className="btn btn-primary">{editingStudent ? 'Cập nhật' : 'Thêm'}</button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

@@ -1,9 +1,20 @@
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api';
 
 import { NOTIF_TYPES } from '../hooks/useNotifications';
+import { useToast } from '../hooks/useToast';
 import { Latex, MixedLatex } from '../components/Latex';
+import Toast from '../components/ui/Toast';
+import Modal from '../components/ui/Modal';
+import Tabs from '../components/ui/Tabs';
+
+const DETAIL_TABS = [
+  ['summary', 'Tóm tắt'],
+  ['milestones', 'Milestone'],
+  ['steps', 'Bước giải'],
+  ['verification', 'Kiểm chứng'],
+  ['misconceptions', 'Lỗi suy luận'],
+];
 
 export default function GradingPage({ teacherId, onNotify }) {
   const [assignments, setAssignments] = useState([]);
@@ -23,7 +34,7 @@ export default function GradingPage({ teacherId, onNotify }) {
   const [overrideScore, setOverrideScore] = useState('');
   const [feedbackNote, setFeedbackNote] = useState('');
   const [savingFeedback, setSavingFeedback] = useState(false);
-  const [toast, setToast] = useState(null);
+  const { toast, showToast } = useToast(3500);
 
   useEffect(() => {
     Promise.all([api.getAssignments(teacherId), api.getClasses(teacherId)])
@@ -35,11 +46,6 @@ export default function GradingPage({ teacherId, onNotify }) {
     if (selectedAssignment && selectedClass) loadData();
     else { setStudents([]); setSubmissions([]); setRubric(null); }
   }, [selectedAssignment, selectedClass]);
-
-  function showToast(msg, type = 'success') {
-    setToast({ message: msg, type });
-    setTimeout(() => setToast(null), 3500);
-  }
 
   async function loadData() {
     setLoading(true);
@@ -137,7 +143,7 @@ export default function GradingPage({ teacherId, onNotify }) {
 
   return (
     <div className="animate-fade">
-      {toast && createPortal(<div className={`toast toast-${toast.type}`}>{toast.message}</div>, document.body)}
+      <Toast toast={toast} />
 
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header"><span className="card-title">🎯 Chọn Bài tập & Lớp học</span></div>
@@ -263,204 +269,190 @@ export default function GradingPage({ teacherId, onNotify }) {
       )}
 
       {/* Detail Modal */}
-      {showModal && selectedSub && createPortal(
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" style={{ maxWidth: 960, width: '95%' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>🔍 Kết quả phân tích lời giải</h3>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
-            </div>
-            <div className="modal-body" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
-                {/* Image gallery */}
-                <div style={{ background: 'var(--bg-base)', padding: 8, borderRadius: 'var(--radius)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {(selectedSub.image_urls?.length > 0 ? selectedSub.image_urls : [selectedSub.image_url]).filter(Boolean).map((url, i, arr) => (
-                    <div key={i}>
-                      {arr.length > 1 && (
-                        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2 }}>Trang {i + 1}</div>
-                      )}
-                      <img src={getImageUrl(url)} alt={`Bài làm trang ${i + 1}`} style={{ width: '100%', objectFit: 'contain', borderRadius: 4 }} />
-                    </div>
-                  ))}
-                  {selectedSub.ocr_text && (
-                    <div style={{ marginTop: 4 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>OCR Text</div>
-                      <div className="ocr-box" style={{ fontSize: 11, maxHeight: 100 }}>{selectedSub.ocr_text}</div>
-                    </div>
-                  )}
-                </div>
+      {showModal && selectedSub && (
+        <Modal title="🔍 Kết quả phân tích lời giải" onClose={() => setShowModal(false)} maxWidth={960}>
+          <div className="modal-body" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
+              {/* Image gallery */}
+              <div style={{ background: 'var(--bg-base)', padding: 8, borderRadius: 'var(--radius)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(selectedSub.image_urls?.length > 0 ? selectedSub.image_urls : [selectedSub.image_url]).filter(Boolean).map((url, i, arr) => (
+                  <div key={i}>
+                    {arr.length > 1 && (
+                      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2 }}>Trang {i + 1}</div>
+                    )}
+                    <img src={getImageUrl(url)} alt={`Bài làm trang ${i + 1}`} style={{ width: '100%', objectFit: 'contain', borderRadius: 4 }} />
+                  </div>
+                ))}
+                {selectedSub.ocr_text && (
+                  <div style={{ marginTop: 4 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>OCR Text</div>
+                    <div className="ocr-box" style={{ fontSize: 11, maxHeight: 100 }}><MixedLatex text={selectedSub.ocr_text} /></div>
+                  </div>
+                )}
+              </div>
 
-                {/* Right panel */}
-                {(() => {
-                  const result = selectedSub.results?.[0];
-                  if (!result) return (
-                    <div className="empty-state">
-                      <p style={{ fontStyle: 'italic' }}>Bài này chưa được phân tích. Nhấn "Phân tích AI" ngoài danh sách.</p>
-                    </div>
-                  );
+              {/* Right panel */}
+              {(() => {
+                const result = selectedSub.results?.[0];
+                if (!result) return (
+                  <div className="empty-state">
+                    <p style={{ fontStyle: 'italic' }}>Bài này chưa được phân tích. Nhấn "Phân tích AI" ngoài danh sách.</p>
+                  </div>
+                );
 
-                  const quality = result.image_quality_json || result.image_quality;
+                const quality = result.image_quality_json || result.image_quality;
 
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      {/* Score hero */}
-                      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <div style={{ textAlign: 'center', background: 'var(--accent-bg)', borderRadius: 'var(--radius)', padding: '12px 24px', border: '1px solid var(--border-strong)' }}>
-                          <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--accent-light)' }}>
-                            {result.total_score}<span style={{ fontSize: 18, color: 'var(--text-muted)' }}>/{result.total_milestones}</span>
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Milestone đạt</div>
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* Score hero */}
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ textAlign: 'center', background: 'var(--accent-bg)', borderRadius: 'var(--radius)', padding: '12px 24px', border: '1px solid var(--border-strong)' }}>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--accent-light)' }}>
+                          {result.total_score}<span style={{ fontSize: 18, color: 'var(--text-muted)' }}>/{result.total_milestones}</span>
                         </div>
-                        {quality && (
-                          <div style={{ fontSize: 13, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <span style={{ color: confColor(quality.confidence), fontWeight: 600 }}>
-                              {quality.is_acceptable ? '✅' : '⚠️'} Chất lượng ảnh: {(quality.confidence * 100).toFixed(0)}%
-                            </span>
-                            {quality.warning && <span style={{ fontSize: 11, color: 'var(--danger)' }}>{quality.warning}</span>}
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Milestone đạt</div>
+                      </div>
+                      {quality && (
+                        <div style={{ fontSize: 13, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <span style={{ color: confColor(quality.confidence), fontWeight: 600 }}>
+                            {quality.is_acceptable ? '✅' : '⚠️'} Chất lượng ảnh: {(quality.confidence * 100).toFixed(0)}%
+                          </span>
+                          {quality.warning && <span style={{ fontSize: 11, color: 'var(--danger)' }}>{quality.warning}</span>}
+                        </div>
+                      )}
+                      {result.needs_review && (
+                        <span className="badge" style={{ background: 'rgba(251,191,36,.15)', color: '#d97706', fontSize: 12 }}>
+                          ⚠️ Cần giáo viên xem lại
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Tabs */}
+                    <Tabs tabs={DETAIL_TABS} active={activeTab} onChange={setActiveTab} />
+
+                    {/* Tab: Tóm tắt */}
+                    {activeTab === 'summary' && (
+                      <div>
+                        {result.feedback_text && (
+                          <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 14, fontSize: 13, lineHeight: 1.7, color: 'var(--text-primary)' }}>
+                            <div style={{ fontWeight: 700, marginBottom: 8, color: 'var(--accent-light)' }}>💬 Phản hồi chẩn đoán</div>
+                            <MixedLatex text={result.feedback_text} />
                           </div>
                         )}
-                        {result.needs_review && (
-                          <span className="badge" style={{ background: 'rgba(251,191,36,.15)', color: '#d97706', fontSize: 12 }}>
-                            ⚠️ Cần giáo viên xem lại
-                          </span>
+                        {result.uncertain_symbols?.length > 0 && (
+                          <div style={{ marginTop: 10, padding: 10, background: 'rgba(251,191,36,.08)', borderRadius: 'var(--radius)', border: '1px solid rgba(251,191,36,.3)', fontSize: 12 }}>
+                            <strong>⚠️ Ký hiệu không chắc chắn:</strong> {result.uncertain_symbols.join('; ')}
+                          </div>
                         )}
                       </div>
+                    )}
 
-                      {/* Tabs */}
-                      <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
-                        {[['summary', 'Tóm tắt'], ['milestones', 'Milestone'], ['steps', 'Bước giải'], ['verification', 'Kiểm chứng'], ['misconceptions', 'Lỗi suy luận']].map(([id, label]) => (
-                          <button key={id} onClick={() => setActiveTab(id)}
-                            style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderBottom: activeTab === id ? '2px solid var(--accent-light)' : '2px solid transparent', background: 'none', color: activeTab === id ? 'var(--accent-light)' : 'var(--text-secondary)', cursor: 'pointer' }}>
-                            {label}
-                          </button>
+                    {/* Tab: Milestones */}
+                    {activeTab === 'milestones' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {(result.milestones || result.milestone_json || []).map((m, i) => (
+                          <div key={i} style={{ padding: '10px 14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: m.achieved ? 'rgba(34,197,94,.06)' : 'rgba(239,68,68,.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13 }}>
+                              <span style={{ fontSize: 16 }}>{m.achieved ? '✅' : '❌'}</span>
+                              {m.name}
+                            </div>
+                            {m.evidence && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, paddingLeft: 24 }}><MixedLatex text={m.evidence} /></div>}
+                          </div>
                         ))}
                       </div>
+                    )}
 
-                      {/* Tab: Tóm tắt */}
-                      {activeTab === 'summary' && (
-                        <div>
-                          {result.feedback_text && (
-                            <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 14, fontSize: 13, lineHeight: 1.7, color: 'var(--text-primary)' }}>
-                              <div style={{ fontWeight: 700, marginBottom: 8, color: 'var(--accent-light)' }}>💬 Phản hồi chẩn đoán</div>
-                              <MixedLatex text={result.feedback_text} />
+                    {/* Tab: Bước giải */}
+                    {activeTab === 'steps' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {(result.steps || result.steps_json || []).map((s, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 12px', background: 'var(--bg-base)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', fontSize: 12 }}>
+                            <span style={{ fontWeight: 700, color: 'var(--accent-light)', minWidth: 24, paddingTop: 2 }}>#{s.step_no || i + 1}</span>
+                            <div style={{ flex: 1, overflowX: 'auto' }}>
+                              {s.latex
+                                ? <Latex block>{s.latex}</Latex>
+                                : s.lhs && s.rhs
+                                  ? <Latex block>{`${s.lhs} = ${s.rhs}`}</Latex>
+                                  : <MixedLatex text={s.raw_text} />}
+                              {s.raw_text && s.latex && s.raw_text !== s.latex && (
+                                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>Gốc: <MixedLatex text={s.raw_text} /></div>
+                              )}
                             </div>
-                          )}
-                          {result.uncertain_symbols?.length > 0 && (
-                            <div style={{ marginTop: 10, padding: 10, background: 'rgba(251,191,36,.08)', borderRadius: 'var(--radius)', border: '1px solid rgba(251,191,36,.3)', fontSize: 12 }}>
-                              <strong>⚠️ Ký hiệu không chắc chắn:</strong> {result.uncertain_symbols.join('; ')}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                      {/* Tab: Milestones */}
-                      {activeTab === 'milestones' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {(result.milestones || result.milestone_json || []).map((m, i) => (
-                            <div key={i} style={{ padding: '10px 14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: m.achieved ? 'rgba(34,197,94,.06)' : 'rgba(239,68,68,.05)' }}>
+                    {/* Tab: Kiểm chứng */}
+                    {activeTab === 'verification' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {(result.verification || result.verification_json || []).length === 0
+                          ? <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Không có dữ liệu kiểm chứng.</div>
+                          : (result.verification || result.verification_json).map((v, i) => (
+                            <div key={i} style={{ padding: '10px 14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: v.is_valid === true ? 'rgba(34,197,94,.06)' : v.is_valid === false ? 'rgba(239,68,68,.06)' : 'var(--bg-base)' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13 }}>
-                                <span style={{ fontSize: 16 }}>{m.achieved ? '✅' : '❌'}</span>
-                                {m.name}
+                                <span>{v.is_valid === true ? '✅' : v.is_valid === false ? '❌' : '❓'}</span>
+                                Bước {v.from_step} → {v.to_step}
+                                <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>({v.method})</span>
                               </div>
-                              {m.evidence && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, paddingLeft: 24 }}>{m.evidence}</div>}
+                              {v.error_description && <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4, paddingLeft: 24 }}><MixedLatex text={v.error_description} /></div>}
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          ))
+                        }
+                      </div>
+                    )}
 
-                      {/* Tab: Bước giải */}
-                      {activeTab === 'steps' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {(result.steps || result.steps_json || []).map((s, i) => (
-                            <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 12px', background: 'var(--bg-base)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', fontSize: 12 }}>
-                              <span style={{ fontWeight: 700, color: 'var(--accent-light)', minWidth: 24, paddingTop: 2 }}>#{s.step_no || i + 1}</span>
-                              <div style={{ flex: 1, overflowX: 'auto' }}>
-                                {s.latex
-                                  ? <Latex block>{s.latex}</Latex>
-                                  : s.lhs && s.rhs
-                                    ? <Latex block>{`${s.lhs} = ${s.rhs}`}</Latex>
-                                    : <span style={{ fontFamily: 'monospace' }}>{s.raw_text}</span>}
-                                {s.raw_text && s.latex && s.raw_text !== s.latex && (
-                                  <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>Gốc: {s.raw_text}</div>
-                                )}
+                    {/* Tab: Lỗi suy luận */}
+                    {activeTab === 'misconceptions' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {(result.misconceptions || result.misconception_json || []).length === 0
+                          ? <div style={{ color: 'var(--success)', fontSize: 13 }}>✅ Không phát hiện lỗi suy luận điển hình.</div>
+                          : (result.misconceptions || result.misconception_json).map((m, i) => (
+                            <div key={i} style={{ padding: '12px 14px', borderRadius: 'var(--radius)', border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.05)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                <span style={{ fontWeight: 700, fontSize: 13 }}>{m.name}</span>
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                  {m.step_no && <span className="tag">Bước {m.step_no}</span>}
+                                  <span className="badge" style={{ fontSize: 11, background: m.confidence === 'high' ? 'rgba(239,68,68,.1)' : 'rgba(251,191,36,.1)', color: m.confidence === 'high' ? 'var(--danger)' : '#d97706' }}>
+                                    {m.confidence === 'high' ? 'Cao' : m.confidence === 'medium' ? 'Trung bình' : 'Thấp'}
+                                  </span>
+                                </div>
                               </div>
+                              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}><MixedLatex text={m.detail} /></div>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          ))
+                        }
+                      </div>
+                    )}
 
-                      {/* Tab: Kiểm chứng */}
-                      {activeTab === 'verification' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {(result.verification || result.verification_json || []).length === 0
-                            ? <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Không có dữ liệu kiểm chứng.</div>
-                            : (result.verification || result.verification_json).map((v, i) => (
-                              <div key={i} style={{ padding: '10px 14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: v.is_valid === true ? 'rgba(34,197,94,.06)' : v.is_valid === false ? 'rgba(239,68,68,.06)' : 'var(--bg-base)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13 }}>
-                                  <span>{v.is_valid === true ? '✅' : v.is_valid === false ? '❌' : '❓'}</span>
-                                  Bước {v.from_step} → {v.to_step}
-                                  <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>({v.method})</span>
-                                </div>
-                                {v.error_description && <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4, paddingLeft: 24 }}><MixedLatex text={v.error_description} /></div>}
-                              </div>
-                            ))
-                          }
+                    {/* Teacher override form */}
+                    <form onSubmit={handleSaveFeedback} style={{ borderTop: '1px solid var(--border)', paddingTop: 14, marginTop: 4 }}>
+                      <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: 'var(--success)' }}>✍️ Đánh giá giáo viên</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: 11 }}>Điểm cuối</label>
+                          <input type="number" className="form-input" step="0.5" min="0" max={result.total_milestones || 10}
+                            value={overrideScore} onChange={e => setOverrideScore(e.target.value)} required />
                         </div>
-                      )}
-
-                      {/* Tab: Lỗi suy luận */}
-                      {activeTab === 'misconceptions' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          {(result.misconceptions || result.misconception_json || []).length === 0
-                            ? <div style={{ color: 'var(--success)', fontSize: 13 }}>✅ Không phát hiện lỗi suy luận điển hình.</div>
-                            : (result.misconceptions || result.misconception_json).map((m, i) => (
-                              <div key={i} style={{ padding: '12px 14px', borderRadius: 'var(--radius)', border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.05)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                  <span style={{ fontWeight: 700, fontSize: 13 }}>{m.name}</span>
-                                  <div style={{ display: 'flex', gap: 6 }}>
-                                    {m.step_no && <span className="tag">Bước {m.step_no}</span>}
-                                    <span className="badge" style={{ fontSize: 11, background: m.confidence === 'high' ? 'rgba(239,68,68,.1)' : 'rgba(251,191,36,.1)', color: m.confidence === 'high' ? 'var(--danger)' : '#d97706' }}>
-                                      {m.confidence === 'high' ? 'Cao' : m.confidence === 'medium' ? 'Trung bình' : 'Thấp'}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}><MixedLatex text={m.detail} /></div>
-                              </div>
-                            ))
-                          }
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: 11 }}>Ghi chú</label>
+                          <input type="text" className="form-input" placeholder="Nhận xét cho học sinh..."
+                            value={feedbackNote} onChange={e => setFeedbackNote(e.target.value)} />
                         </div>
-                      )}
-
-                      {/* Teacher override form */}
-                      <form onSubmit={handleSaveFeedback} style={{ borderTop: '1px solid var(--border)', paddingTop: 14, marginTop: 4 }}>
-                        <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: 'var(--success)' }}>✍️ Đánh giá giáo viên</h4>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
-                          <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label className="form-label" style={{ fontSize: 11 }}>Điểm cuối</label>
-                            <input type="number" className="form-input" step="0.5" min="0" max={result.total_milestones || 10}
-                              value={overrideScore} onChange={e => setOverrideScore(e.target.value)} required />
-                          </div>
-                          <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label className="form-label" style={{ fontSize: 11 }}>Ghi chú</label>
-                            <input type="text" className="form-input" placeholder="Nhận xét cho học sinh..."
-                              value={feedbackNote} onChange={e => setFeedbackNote(e.target.value)} />
-                          </div>
-                        </div>
-                        <button type="submit" className="btn btn-primary btn-sm" disabled={savingFeedback} style={{ width: '100%', marginTop: 10 }}>
-                          {savingFeedback ? 'Đang lưu...' : '💾 Lưu điểm & nhận xét'}
-                        </button>
-                      </form>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Đóng</button>
+                      </div>
+                      <button type="submit" className="btn btn-primary btn-sm" disabled={savingFeedback} style={{ width: '100%', marginTop: 10 }}>
+                        {savingFeedback ? 'Đang lưu...' : '💾 Lưu điểm & nhận xét'}
+                      </button>
+                    </form>
+                  </div>
+                );
+              })()}
             </div>
           </div>
-        </div>,
-        document.body
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Đóng</button>
+          </div>
+        </Modal>
       )}
     </div>
   );

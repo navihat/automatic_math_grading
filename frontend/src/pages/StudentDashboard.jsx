@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api';
-import { useNotifications, NOTIF_TYPES, NOTIF_ICONS, relativeTime } from '../hooks/useNotifications';
+import { useNotifications, NOTIF_TYPES } from '../hooks/useNotifications';
+import { useToast } from '../hooks/useToast';
+import Toast from '../components/ui/Toast';
+import MilestoneResult from '../components/grading/MilestoneResult';
+import MultiImageUpload from '../components/student/MultiImageUpload';
+import NotificationPanel from '../components/layout/NotificationPanel';
+import AppLogo from '../components/common/AppLogo';
+import { MixedLatex } from '../components/Latex';
 
 export default function StudentDashboard({ student, onLogout }) {
   const { notifications, addNotification, markAllRead, clearAll, unreadCount } = useNotifications();
@@ -15,17 +21,14 @@ export default function StudentDashboard({ student, onLogout }) {
   const [uploading, setUploading] = useState(false);
   const dragIdx = useRef(null);
   const [analysisResult, setAnalysisResult] = useState(null);
-  const [toast, setToast] = useState(null);
-  const [showNotif, setShowNotif] = useState(false);
+  const { toast, showToast } = useToast();
   const [showMsg, setShowMsg] = useState(false);
-  const notifRef = useRef(null);
   const msgRef = useRef(null);
 
   useEffect(() => { loadData(); }, [student.class_id, student.id]);
 
   useEffect(() => {
     function handleClick(e) {
-      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotif(false);
       if (msgRef.current && !msgRef.current.contains(e.target)) setShowMsg(false);
     }
     document.addEventListener('mousedown', handleClick);
@@ -58,11 +61,6 @@ export default function StudentDashboard({ student, onLogout }) {
     } catch (err) {
       showToast('Không thể tải dữ liệu: ' + err.message, 'error');
     }
-  }
-
-  function showToast(msg, type = 'success') {
-    setToast({ message: msg, type });
-    setTimeout(() => setToast(null), 3000);
   }
 
   function handleFilesChange(e) {
@@ -133,133 +131,15 @@ export default function StudentDashboard({ student, onLogout }) {
 
   const isExpired = (deadlineStr) => new Date(deadlineStr) < new Date();
 
-  function MultiImageUpload({ previews, uploading, onFilesChange, onRemove, onDragStart, onDrop }) {
-    return (
-      <div>
-        {previews.length < 5 && (
-          <label style={{ display: 'block', cursor: uploading ? 'not-allowed' : 'pointer' }}>
-            <input type="file" accept="image/*" multiple onChange={onFilesChange} disabled={uploading} style={{ display: 'none' }} />
-            <div className="file-upload" style={{ pointerEvents: uploading ? 'none' : 'auto' }}>
-              <div className="file-upload-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-teal)' }}>
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-                </svg>
-              </div>
-              <div className="file-upload-text">
-                Nhấp để chọn ảnh bài làm <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>({previews.length}/5 ảnh)</span>
-              </div>
-            </div>
-          </label>
-        )}
-
-        {previews.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8, marginTop: 10 }}>
-            {previews.map((p, idx) => (
-              <div
-                key={p.id}
-                draggable
-                onDragStart={() => onDragStart(idx)}
-                onDragOver={e => e.preventDefault()}
-                onDrop={e => onDrop(e, idx)}
-                style={{ position: 'relative', border: '2px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', cursor: 'grab', background: 'var(--bg-base)' }}
-              >
-                <div style={{ position: 'absolute', top: 4, left: 4, background: 'var(--accent-light)', color: '#fff', borderRadius: 4, fontSize: 10, fontWeight: 700, padding: '1px 5px', zIndex: 1 }}>
-                  {idx + 1}
-                </div>
-                <button
-                  onClick={() => onRemove(p.id)}
-                  disabled={uploading}
-                  style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,.55)', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, lineHeight: 1 }}
-                >
-                  ✕
-                </button>
-                <img src={p.url} alt={`Trang ${idx + 1}`} style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }} />
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', padding: '3px 0', background: 'var(--bg-elevated)' }}>
-                  Kéo để sắp xếp
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  function MilestoneResult({ result }) {
-    if (!result) return null;
-    const milestones = result.milestone_json || [];
-    const achieved = milestones.filter(m => m.achieved).length;
-    const feedback = result.feedback_text;
-    const score = result.total_score;
-    const needsReview = result.needs_review;
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ padding: '12px 20px', background: 'var(--accent-bg)', borderRadius: 'var(--radius)', border: '1px solid var(--accent)', textAlign: 'center', minWidth: 100 }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)' }}>{score ?? '–'}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Điểm AI</div>
-          </div>
-          <div style={{ padding: '12px 20px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', textAlign: 'center', minWidth: 100 }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--success)' }}>{achieved}/{milestones.length}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Milestone đạt</div>
-          </div>
-          {needsReview && (
-            <span style={{ padding: '6px 12px', background: 'rgba(251,191,36,.15)', border: '1px solid #d97706', borderRadius: 'var(--radius)', fontSize: 12, color: '#d97706', fontWeight: 600 }}>
-              Đang chờ giáo viên review
-            </span>
-          )}
-        </div>
-
-        {milestones.length > 0 && (
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase' }}>Milestone</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {milestones.map((m, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 10px', borderRadius: 6, background: m.achieved ? 'rgba(16,185,129,.08)' : 'var(--bg-elevated)', border: `1px solid ${m.achieved ? 'rgba(16,185,129,.3)' : 'var(--border)'}` }}>
-                  <span style={{ fontSize: 16 }}>{m.achieved ? '✅' : '⬜'}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{m.name || m.id}</div>
-                    {m.comment && <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 2 }}>{m.comment}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {feedback && (
-          <div style={{ padding: 12, background: 'var(--bg-elevated)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', fontSize: 13, whiteSpace: 'pre-wrap', color: 'var(--text-primary)', lineHeight: 1.6 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase' }}>Phản hồi AI</div>
-            {feedback}
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="app-layout">
-      {toast && createPortal(
-        <div className={`toast toast-${toast.type}`}>{toast.message}</div>,
-        document.body
-      )}
+      <Toast toast={toast} />
 
       <aside className="sidebar open">
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <div className="logo-icon" style={{ background: 'none', boxShadow: 'none' }}>
-              <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-                {/* Mortarboard top */}
-                <polygon points="18,5 34,13 18,21 2,13" fill="#cdeafd" fillOpacity="0.18" stroke="#cdeafd" strokeWidth="1.6" strokeLinejoin="round"/>
-                {/* Center gem */}
-                <circle cx="18" cy="13" r="2.8" fill="#cdeafd"/>
-                {/* Tassel string */}
-                <line x1="34" y1="13" x2="34" y2="22" stroke="#cdeafd" strokeOpacity="0.7" strokeWidth="1.8" strokeLinecap="round"/>
-                <circle cx="34" cy="23.5" r="1.8" fill="#cdeafd" fillOpacity="0.7"/>
-                {/* Gown sides */}
-                <path d="M9 18.5v6.5c0 2.2 4 4 9 4s9-1.8 9-4v-6.5" stroke="#cdeafd" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <AppLogo size={36} />
             </div>
             <div>
               <h1 style={{ color: '#cdeafd' }}>Học sinh</h1>
@@ -328,47 +208,15 @@ export default function StudentDashboard({ student, onLogout }) {
             <p>Học sinh: <strong>{student.name}</strong></p>
           </div>
           <div className="page-header-actions">
-            {/* Notification button */}
-            <div style={{ position: 'relative' }} ref={notifRef}>
-              <button className="header-icon-btn" title="Thông báo" style={{ position: 'relative' }} onClick={() => { setShowNotif(v => !v); setShowMsg(false); if (!showNotif) markAllRead(); }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
-                {unreadCount > 0 && (
-                  <span style={{ position: 'absolute', top: 2, right: 2, background: 'var(--danger)', color: '#fff', borderRadius: '50%', fontSize: 10, fontWeight: 700, minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </button>
-              {showNotif && (
-                <div style={{ position: 'absolute', top: '110%', right: 0, width: 300, background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', zIndex: 200, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ fontWeight: 700, fontSize: 13 }}>Thông báo</span>
-                    {notifications.length > 0 && (
-                      <button onClick={clearAll} style={{ fontSize: 11, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Xóa tất cả</button>
-                    )}
-                  </div>
-                  <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-                    {notifications.length === 0 ? (
-                      <div style={{ fontSize: 12.5, color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>Chưa có thông báo.</div>
-                    ) : notifications.map(n => (
-                      <div key={n.id} style={{ display: 'flex', gap: 10, padding: '10px 14px', borderBottom: '1px solid var(--border)', background: n.read ? 'transparent' : 'var(--accent-bg)' }}>
-                        <span style={{ fontSize: 18, lineHeight: 1.4 }}>{NOTIF_ICONS[n.type]}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
-                          <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.message}</div>
-                          <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3 }}>{relativeTime(n.timestamp)}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <NotificationPanel
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onMarkAllRead={markAllRead}
+              onClearAll={clearAll}
+            />
             {/* Message button */}
             <div style={{ position: 'relative' }} ref={msgRef}>
-              <button className="header-icon-btn" title="Tin nhắn" onClick={() => { setShowMsg(v => !v); setShowNotif(false); }}>
+              <button className="header-icon-btn" title="Tin nhắn" onClick={() => setShowMsg(v => !v)}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
@@ -453,8 +301,17 @@ export default function StudentDashboard({ student, onLogout }) {
                         <button className="modal-close" onClick={() => setSelectedAssignment(null)}>✕</button>
                       </div>
                       <div style={{ background: 'var(--bg-elevated)', padding: 14, borderRadius: 'var(--radius)', border: '1px solid var(--border)', marginBottom: 10 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4, textTransform: 'uppercase' }}>Đề bài</div>
-                        <div style={{ fontSize: 14.5, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedAssignment.problem_text}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase' }}>Đề bài</div>
+                        {selectedAssignment.problem_image_url && (
+                          <img
+                            src={getImageUrl(selectedAssignment.problem_image_url)}
+                            alt="Ảnh đề bài"
+                            style={{ width: '100%', borderRadius: 6, border: '1px solid var(--border)', marginBottom: 10, display: 'block' }}
+                          />
+                        )}
+                        {selectedAssignment.problem_text && (
+                          <div style={{ fontSize: 14.5, lineHeight: 1.6 }}><MixedLatex text={selectedAssignment.problem_text} /></div>
+                        )}
                       </div>
                       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12.5, color: 'var(--text-secondary)' }}>
                         <span>Loại: <strong>{selectedAssignment.type}</strong></span>

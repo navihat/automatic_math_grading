@@ -32,6 +32,7 @@ class TeacherFeedbackResponse(TeacherFeedbackBase):
 class ResultBase(BaseModel):
     steps_json: Optional[Any] = None
     total_score: int
+    total_milestones: int = 0
     confidence: float
 
 
@@ -48,7 +49,12 @@ class ResultUpdate(BaseModel):
 class ResultResponse(ResultBase):
     id: int
     submission_id: int
+    milestone_json: Optional[Any] = None
+    misconception_json: Optional[Any] = None
+    feedback_text: Optional[str] = None
+    needs_review: bool = False
     teacher_feedback_id: Optional[int] = None
+    teacher_feedback: Optional[TeacherFeedbackResponse] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api';
-
 import { NOTIF_TYPES } from '../hooks/useNotifications';
+import { useToast } from '../hooks/useToast';
+import Toast from '../components/ui/Toast';
+import Modal from '../components/ui/Modal';
+import LoadingState from '../components/ui/LoadingState';
+import EmptyState from '../components/ui/EmptyState';
+import MilestoneEditor from '../components/assignments/MilestoneEditor';
+import { MixedLatex } from '../components/Latex';
 
 export default function AssignmentsPage({ teacherId, onNotify }) {
   const [assignments, setAssignments] = useState([]);
@@ -17,7 +22,7 @@ export default function AssignmentsPage({ teacherId, onNotify }) {
   const [editingAssignment, setEditingAssignment] = useState(null);
   const [uploadMode, setUploadMode] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [toast, setToast] = useState(null);
+  const { toast, showToast } = useToast();
   const [milestones, setMilestones] = useState([]);
   const [generatingMilestones, setGeneratingMilestones] = useState(false);
   const [rubricTitle, setRubricTitle] = useState('');
@@ -28,11 +33,6 @@ export default function AssignmentsPage({ teacherId, onNotify }) {
   const imageInputRef = useRef(null);
 
   useEffect(() => { loadAssignments(); loadAllClasses(); }, [teacherId]);
-
-  function showToast(msg, type = 'success') {
-    setToast({ message: msg, type });
-    setTimeout(() => setToast(null), 3000);
-  }
 
   async function loadAssignments() {
     try {
@@ -220,16 +220,6 @@ export default function AssignmentsPage({ teacherId, onNotify }) {
     setMilestones(prev => prev.filter((_, i) => i !== idx));
   }
 
-  function getMilestoneGroups() {
-    const groups = [];
-    const seen = new Set();
-    for (const m of milestones) {
-      const g = m.question_group || null;
-      if (!seen.has(g)) { seen.add(g); groups.push(g); }
-    }
-    return groups;
-  }
-
   async function handleDeleteRubric(id) {
     if (!confirm('Xoá rubric này?')) return;
     try {
@@ -240,25 +230,7 @@ export default function AssignmentsPage({ teacherId, onNotify }) {
     } catch (err) { showToast(err.message, 'error'); }
   }
 
-  function MilestoneRow({ m, i }) {
-    return (
-      <div style={{ padding: 12, background: 'var(--bg-base)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-        <span style={{ fontWeight: 700, color: 'var(--accent-light)', fontSize: 13, minWidth: 28, paddingTop: 7 }}>{m.id}</span>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <input className="form-input" style={{ marginBottom: 0, fontSize: 13 }}
-            placeholder="Tên milestone (ngắn gọn)"
-            value={m.name} onChange={e => updateMilestone(i, 'name', e.target.value)} required />
-          <input className="form-input" style={{ marginBottom: 0, fontSize: 12 }}
-            placeholder="Mô tả chi tiết (tuỳ chọn)"
-            value={m.description} onChange={e => updateMilestone(i, 'description', e.target.value)} />
-        </div>
-        <button type="button" onClick={() => removeMilestone(i)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 16, padding: '4px 2px', marginTop: 2 }}>✕</button>
-      </div>
-    );
-  }
-
-  if (loading) return <div className="loading-state"><div className="spinner spinner-lg"></div><span>Đang tải...</span></div>;
+  if (loading) return <LoadingState />;
 
   const defaultDeadline = () => {
     const d = new Date();
@@ -268,10 +240,7 @@ export default function AssignmentsPage({ teacherId, onNotify }) {
 
   return (
     <div className="animate-fade">
-      {toast && createPortal(
-        <div className={`toast toast-${toast.type}`}>{toast.message}</div>,
-        document.body
-      )}
+      <Toast toast={toast} />
 
       <div style={{ display: 'grid', gridTemplateColumns: selectedAssignment ? '1fr 1.5fr' : '1fr', gap: 24 }}>
         {/* Assignments List */}
@@ -283,11 +252,7 @@ export default function AssignmentsPage({ teacherId, onNotify }) {
             </button>
           </div>
           {assignments.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">📝</div>
-              <h3>Chưa có bài tập</h3>
-              <p>Tạo bài tập đầu tiên</p>
-            </div>
+            <EmptyState icon="📝" title="Chưa có bài tập" description="Tạo bài tập đầu tiên" />
           ) : (
             <table className="data-table">
               <thead>
@@ -366,7 +331,8 @@ export default function AssignmentsPage({ teacherId, onNotify }) {
 
               <div style={{ padding: '0 0 12px', borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
                 <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                  <strong style={{ color: 'var(--text-primary)' }}>Đề bài:</strong> {selectedAssignment.problem_text}
+                  <strong style={{ color: 'var(--text-primary)' }}>Đề bài:</strong>{' '}
+                  <MixedLatex text={selectedAssignment.problem_text} />
                 </p>
                 {/* Ảnh đề bài */}
                 {selectedAssignment.problem_image_url ? (
@@ -393,11 +359,7 @@ export default function AssignmentsPage({ teacherId, onNotify }) {
               </div>
 
               {rubrics.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-state-icon">📐</div>
-                  <h3>Chưa có rubric</h3>
-                  <p>Tạo rubric milestone bằng AI hoặc nhập thủ công</p>
-                </div>
+                <EmptyState icon="📐" title="Chưa có rubric" description="Tạo rubric milestone bằng AI hoặc nhập thủ công" />
               ) : (
                 rubrics.map((r) => (
                   <div key={r.id} className="criterion-card" style={{ marginBottom: 12 }}>
@@ -449,189 +411,143 @@ export default function AssignmentsPage({ teacherId, onNotify }) {
 
       {/* Assignment Modal */}
       {showAssignmentModal && (
-        <div className="modal-overlay" onClick={closeAssignmentModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingAssignment ? 'Sửa bài tập' : 'Tạo bài tập mới'}</h3>
-              <button className="modal-close" onClick={closeAssignmentModal}>✕</button>
-            </div>
-            <form onSubmit={handleSaveAssignment}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="form-label">Đề bài / Mô tả</label>
-                  <textarea className="form-textarea" name="problem_text" rows="3" defaultValue={editingAssignment?.problem_text || ''} placeholder="Nhập nội dung đề bài..." required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Ảnh đề bài <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(tuỳ chọn)</span></label>
-                  {/* Preview ảnh hiện tại (khi edit) hoặc ảnh mới chọn */}
-                  {(imagePreview || editingAssignment?.problem_image_url) && (
-                    <div style={{ marginBottom: 8 }}>
-                      <img
-                        src={imagePreview || getImageUrl(editingAssignment.problem_image_url)}
-                        alt="Preview đề bài"
-                        style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
-                      />
-                    </div>
-                  )}
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="form-input"
-                    style={{ padding: '6px 8px' }}
-                    onChange={handleImageChange}
-                  />
-                  <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--text-muted)' }}>
-                    JPEG, PNG, WebP · tối đa 10 MB
+        <Modal title={editingAssignment ? 'Sửa bài tập' : 'Tạo bài tập mới'} onClose={closeAssignmentModal}>
+          <form onSubmit={handleSaveAssignment}>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Đề bài / Mô tả</label>
+                <textarea className="form-textarea" name="problem_text" rows="3" defaultValue={editingAssignment?.problem_text || ''} placeholder="Nhập nội dung đề bài..." required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Ảnh đề bài <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(tuỳ chọn)</span></label>
+                {/* Preview ảnh hiện tại (khi edit) hoặc ảnh mới chọn */}
+                {(imagePreview || editingAssignment?.problem_image_url) && (
+                  <div style={{ marginBottom: 8 }}>
+                    <img
+                      src={imagePreview || getImageUrl(editingAssignment.problem_image_url)}
+                      alt="Preview đề bài"
+                      style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
+                    />
                   </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Loại bài</label>
-                  <select className="form-select" name="type" defaultValue={editingAssignment?.type || 'math'}>
-                    <option value="math">Toán học</option>
-                    <option value="algebra">Đại số</option>
-                    <option value="geometry">Hình học</option>
-                    <option value="calculus">Giải tích</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Hạn nộp</label>
-                  <input className="form-input" name="deadline" type="datetime-local" defaultValue={editingAssignment ? new Date(editingAssignment.deadline).toISOString().slice(0, 16) : defaultDeadline()} required />
+                )}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="form-input"
+                  style={{ padding: '6px 8px' }}
+                  onChange={handleImageChange}
+                />
+                <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--text-muted)' }}>
+                  JPEG, PNG, WebP · tối đa 10 MB
                 </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={closeAssignmentModal}>Huỷ</button>
-                <button type="submit" className="btn btn-primary" disabled={uploadingImage}>
-                  {uploadingImage ? <><div className="spinner" style={{ width: 14, height: 14 }}></div> Đang upload...</> : (editingAssignment ? 'Cập nhật' : 'Tạo')}
-                </button>
+              <div className="form-group">
+                <label className="form-label">Loại bài</label>
+                <select className="form-select" name="type" defaultValue={editingAssignment?.type || 'math'}>
+                  <option value="math">Toán học</option>
+                  <option value="algebra">Đại số</option>
+                  <option value="geometry">Hình học</option>
+                  <option value="calculus">Giải tích</option>
+                </select>
               </div>
-            </form>
-          </div>
-        </div>
+              <div className="form-group">
+                <label className="form-label">Hạn nộp</label>
+                <input className="form-input" name="deadline" type="datetime-local" defaultValue={editingAssignment ? new Date(editingAssignment.deadline).toISOString().slice(0, 16) : defaultDeadline()} required />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={closeAssignmentModal}>Huỷ</button>
+              <button type="submit" className="btn btn-primary" disabled={uploadingImage}>
+                {uploadingImage ? <><div className="spinner" style={{ width: 14, height: 14 }}></div> Đang upload...</> : (editingAssignment ? 'Cập nhật' : 'Tạo')}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* Class Link Modal */}
       {showClassModal && (
-        <div className="modal-overlay" onClick={() => setShowClassModal(false)}>
-          <div className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>🏫 Gán lớp học – Bài tập #{selectedAssignment.id}</h3>
-              <button className="modal-close" onClick={() => setShowClassModal(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              {allClasses.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Bạn chưa có lớp nào. Hãy tạo lớp ở trang Lớp học trước.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {allClasses.map(cls => {
-                    const isLinked = linkedClasses.some(c => c.id === cls.id);
-                    const isToggling = togglingClass === cls.id;
-                    return (
-                      <label key={cls.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 'var(--radius)', border: `1px solid ${isLinked ? 'var(--accent)' : 'var(--border)'}`, background: isLinked ? 'var(--accent-bg)' : 'var(--bg-surface)', cursor: 'pointer', transition: 'all .15s' }}>
-                        <input
-                          type="checkbox"
-                          checked={isLinked}
-                          disabled={isToggling}
-                          onChange={() => toggleClassLink(cls)}
-                          style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer' }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600, fontSize: 14 }}>{cls.name}</div>
-                          {cls.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{cls.description}</div>}
-                        </div>
-                        {isToggling && <div className="spinner" style={{ width: 14, height: 14 }}></div>}
-                        {isLinked && !isToggling && <span style={{ color: 'var(--accent)', fontSize: 12, fontWeight: 600 }}>Đã gán</span>}
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-primary" onClick={() => setShowClassModal(false)}>Xong</button>
-            </div>
+        <Modal title={`🏫 Gán lớp học – Bài tập #${selectedAssignment.id}`} onClose={() => setShowClassModal(false)} maxWidth={480}>
+          <div className="modal-body">
+            {allClasses.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Bạn chưa có lớp nào. Hãy tạo lớp ở trang Lớp học trước.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {allClasses.map(cls => {
+                  const isLinked = linkedClasses.some(c => c.id === cls.id);
+                  const isToggling = togglingClass === cls.id;
+                  return (
+                    <label key={cls.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 'var(--radius)', border: `1px solid ${isLinked ? 'var(--accent)' : 'var(--border)'}`, background: isLinked ? 'var(--accent-bg)' : 'var(--bg-surface)', cursor: 'pointer', transition: 'all .15s' }}>
+                      <input
+                        type="checkbox"
+                        checked={isLinked}
+                        disabled={isToggling}
+                        onChange={() => toggleClassLink(cls)}
+                        style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>{cls.name}</div>
+                        {cls.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{cls.description}</div>}
+                      </div>
+                      {isToggling && <div className="spinner" style={{ width: 14, height: 14 }}></div>}
+                      {isLinked && !isToggling && <span style={{ color: 'var(--accent)', fontSize: 12, fontWeight: 600 }}>Đã gán</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        </div>
+          <div className="modal-footer">
+            <button className="btn btn-primary" onClick={() => setShowClassModal(false)}>Xong</button>
+          </div>
+        </Modal>
       )}
 
       {/* Rubric Modal – Milestone-based */}
       {showRubricModal && (
-        <div className="modal-overlay" onClick={() => { setShowRubricModal(false); setMilestones([]); setRubricTitle(''); }}>
-          <div className="modal" style={{ maxWidth: 640, width: '95%' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>🎯 Tạo Rubric Milestone</h3>
-              <button className="modal-close" onClick={() => { setShowRubricModal(false); setMilestones([]); setRubricTitle(''); }}>✕</button>
+        <Modal title="🎯 Tạo Rubric Milestone" onClose={() => { setShowRubricModal(false); setMilestones([]); setRubricTitle(''); }} maxWidth={640}>
+          <form onSubmit={handleCreateMilestoneRubric}>
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              <div className="form-group">
+                <label className="form-label">Tiêu đề rubric</label>
+                <input className="form-input" placeholder="Ví dụ: Rubric Phương trình bậc nhất"
+                  value={rubricTitle} onChange={e => setRubricTitle(e.target.value)} />
+              </div>
+
+              <div style={{ padding: 12, background: 'var(--bg-base)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', marginBottom: 16, fontSize: 13 }}>
+                <strong>Đề bài:</strong>{' '}
+                <MixedLatex text={selectedAssignment?.problem_text} />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <label className="form-label" style={{ marginBottom: 0 }}>Danh sách Milestone ({milestones.length})</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={handleGenerateMilestones} disabled={generatingMilestones}>
+                    {generatingMilestones
+                      ? <><div className="spinner" style={{ width: 12, height: 12 }}></div> AI đang sinh...</>
+                      : '✨ AI gợi ý milestone'}
+                  </button>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => addMilestone(null)}>+ Thêm</button>
+                </div>
+              </div>
+
+              {milestones.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+                  {selectedAssignment?.problem_image_url
+                    ? 'Nhấn "AI gợi ý milestone" để AI đọc ảnh đề bài và tạo milestone tự động.'
+                    : 'Nhấn "AI gợi ý milestone" để tạo tự động hoặc "+ Thêm" để nhập thủ công.'}
+                </div>
+              ) : (
+                <MilestoneEditor milestones={milestones} onUpdate={updateMilestone} onRemove={removeMilestone} onAdd={addMilestone} />
+              )}
             </div>
-            <form onSubmit={handleCreateMilestoneRubric}>
-              <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                <div className="form-group">
-                  <label className="form-label">Tiêu đề rubric</label>
-                  <input className="form-input" placeholder="Ví dụ: Rubric Phương trình bậc nhất"
-                    value={rubricTitle} onChange={e => setRubricTitle(e.target.value)} />
-                </div>
-
-                <div style={{ padding: 12, background: 'var(--bg-base)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', marginBottom: 16, fontSize: 13 }}>
-                  <strong>Đề bài:</strong> {selectedAssignment?.problem_text}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <label className="form-label" style={{ marginBottom: 0 }}>Danh sách Milestone ({milestones.length})</label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={handleGenerateMilestones} disabled={generatingMilestones}>
-                      {generatingMilestones
-                        ? <><div className="spinner" style={{ width: 12, height: 12 }}></div> AI đang sinh...</>
-                        : '✨ AI gợi ý milestone'}
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => addMilestone(null)}>+ Thêm</button>
-                  </div>
-                </div>
-
-                {milestones.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: 13 }}>
-                    {selectedAssignment?.problem_image_url
-                      ? 'Nhấn "AI gợi ý milestone" để AI đọc ảnh đề bài và tạo milestone tự động.'
-                      : 'Nhấn "AI gợi ý milestone" để tạo tự động hoặc "+ Thêm" để nhập thủ công.'}
-                  </div>
-                ) : (() => {
-                  const groups = getMilestoneGroups();
-                  const isGrouped = groups.some(g => g !== null);
-                  if (!isGrouped) {
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {milestones.map((m, i) => <MilestoneRow key={i} m={m} i={i} />)}
-                      </div>
-                    );
-                  }
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      {groups.map(group => (
-                        <div key={group ?? '__ungrouped'}>
-                          {group && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-light)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                                📌 {group}
-                              </div>
-                              <button type="button" className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: '2px 8px' }} onClick={() => addMilestone(group)}>
-                                + Thêm vào {group}
-                              </button>
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: group ? 8 : 0, borderLeft: group ? '2px solid var(--accent-bg)' : 'none' }}>
-                            {milestones.map((m, i) => m.question_group === group ? <MilestoneRow key={i} m={m} i={i} /> : null)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => { setShowRubricModal(false); setMilestones([]); setRubricTitle(''); }}>Huỷ</button>
-                <button type="submit" className="btn btn-primary" disabled={milestones.length === 0}>💾 Lưu rubric milestone</button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => { setShowRubricModal(false); setMilestones([]); setRubricTitle(''); }}>Huỷ</button>
+              <button type="submit" className="btn btn-primary" disabled={milestones.length === 0}>💾 Lưu rubric milestone</button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api';
 import { Latex, MixedLatex } from '../components/Latex';
+import { useToast } from '../hooks/useToast';
+import Toast from '../components/ui/Toast';
+import Modal from '../components/ui/Modal';
+import Tabs from '../components/ui/Tabs';
 
 const TABS = [
   ['ocr', '📝 OCR'],
@@ -24,16 +27,11 @@ export default function ResultsPage({ teacherId }) {
   const [activeTab, setActiveTab] = useState('feedback');
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [savingFeedback, setSavingFeedback] = useState(false);
-  const [toast, setToast] = useState(null);
+  const { toast, showToast } = useToast(3500);
 
   useEffect(() => {
     api.getAssignments(teacherId).then(setAssignments).catch(() => {});
   }, [teacherId]);
-
-  function showToast(msg, type = 'success') {
-    setToast({ message: msg, type });
-    setTimeout(() => setToast(null), 3500);
-  }
 
   async function handleAssignmentChange(e) {
     const id = e.target.value;
@@ -100,7 +98,7 @@ export default function ResultsPage({ teacherId }) {
 
   return (
     <div className="animate-fade">
-      {toast && createPortal(<div className={`toast toast-${toast.type}`}>{toast.message}</div>, document.body)}
+      <Toast toast={toast} />
 
       {/* Filters */}
       <div className="card" style={{ marginBottom: 24 }}>
@@ -203,7 +201,7 @@ export default function ResultsPage({ teacherId }) {
                           {result.teacher_feedback ? (
                             <div style={{ fontSize: 13, color: 'var(--success)', fontWeight: 600 }}>
                               ✅ Điểm giáo viên: {result.teacher_feedback.final_score}
-                              {result.teacher_feedback.note && <span style={{ fontWeight: 400, color: 'var(--text-secondary)', marginLeft: 8 }}>"{result.teacher_feedback.note}"</span>}
+                              {result.teacher_feedback.note && <span style={{ fontWeight: 400, color: 'var(--text-secondary)', marginLeft: 8 }}>"<MixedLatex text={result.teacher_feedback.note} />"</span>}
                             </div>
                           ) : (
                             <button className="btn btn-primary btn-sm" onClick={() => setShowFeedbackModal(true)}>✍️ Thêm đánh giá GV</button>
@@ -217,15 +215,7 @@ export default function ResultsPage({ teacherId }) {
 
               {result && (
                 <div className="card">
-                  {/* Tabs */}
-                  <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', paddingBottom: 0, marginBottom: 16, flexWrap: 'wrap' }}>
-                    {TABS.map(([id, label]) => (
-                      <button key={id} onClick={() => setActiveTab(id)}
-                        style={{ padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderBottom: activeTab === id ? '2px solid var(--accent-light)' : '2px solid transparent', background: 'none', color: activeTab === id ? 'var(--accent-light)' : 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                  <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
                   {/* OCR Tab */}
                   {activeTab === 'ocr' && (
@@ -266,10 +256,10 @@ export default function ResultsPage({ teacherId }) {
                                     ? <Latex block>{s.latex}</Latex>
                                     : s.lhs && s.rhs
                                       ? <Latex block>{`${s.lhs} = ${s.rhs}`}</Latex>
-                                      : <span style={{ fontFamily: 'monospace' }}>{s.raw_text}</span>}
+                                      : <MixedLatex text={s.raw_text} />}
                                 </div>
                                 {s.raw_text && s.latex && s.raw_text !== s.latex && (
-                                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>Gốc: {s.raw_text}</div>
+                                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>Gốc: <MixedLatex text={s.raw_text} /></div>
                                 )}
                                 {s.operation && s.operation !== 'equation' && (
                                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>Thao tác: {s.operation}</div>
@@ -318,7 +308,7 @@ export default function ResultsPage({ teacherId }) {
                               <span style={{ fontSize: 18 }}>{m.achieved ? '✅' : '❌'}</span>
                               {m.name}
                             </div>
-                            {m.evidence && <div style={{ marginTop: 6, paddingLeft: 28, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{m.evidence}</div>}
+                            {m.evidence && <div style={{ marginTop: 6, paddingLeft: 28, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}><MixedLatex text={m.evidence} /></div>}
                           </div>
                         ))
                       }
@@ -344,7 +334,7 @@ export default function ResultsPage({ teacherId }) {
                                 </span>
                               </div>
                             </div>
-                            <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{m.detail}</div>
+                            <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7 }}><MixedLatex text={m.detail} /></div>
                           </div>
                         ))
                       }
@@ -388,38 +378,31 @@ export default function ResultsPage({ teacherId }) {
       )}
 
       {/* Teacher feedback modal */}
-      {showFeedbackModal && result && createPortal(
-        <div className="modal-overlay" onClick={() => setShowFeedbackModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>✍️ Đánh giá của giáo viên</h3>
-              <button className="modal-close" onClick={() => setShowFeedbackModal(false)}>✕</button>
+      {showFeedbackModal && result && (
+        <Modal title="✍️ Đánh giá của giáo viên" onClose={() => setShowFeedbackModal(false)}>
+          <form onSubmit={handleSaveFeedback}>
+            <div className="modal-body">
+              <div style={{ padding: '10px 14px', background: 'var(--bg-base)', borderRadius: 'var(--radius)', marginBottom: 16, fontSize: 13 }}>
+                <strong>Pipeline AI:</strong> {result.total_score}/{result.total_milestones} milestone đạt &nbsp;|&nbsp;
+                <strong>Ảnh:</strong> {quality ? (quality.is_acceptable ? '✅ Tốt' : '⚠️ Chất lượng thấp') : 'N/A'}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Điểm cuối (giáo viên quyết định)</label>
+                <input className="form-input" name="final_score" type="number" step="0.5" min="0" defaultValue={result.total_score} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Ghi chú / Nhận xét thêm</label>
+                <textarea className="form-textarea" name="note" rows="3" placeholder="Nhận xét chi tiết cho học sinh..." />
+              </div>
             </div>
-            <form onSubmit={handleSaveFeedback}>
-              <div className="modal-body">
-                <div style={{ padding: '10px 14px', background: 'var(--bg-base)', borderRadius: 'var(--radius)', marginBottom: 16, fontSize: 13 }}>
-                  <strong>Pipeline AI:</strong> {result.total_score}/{result.total_milestones} milestone đạt &nbsp;|&nbsp;
-                  <strong>Ảnh:</strong> {quality ? (quality.is_acceptable ? '✅ Tốt' : '⚠️ Chất lượng thấp') : 'N/A'}
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Điểm cuối (giáo viên quyết định)</label>
-                  <input className="form-input" name="final_score" type="number" step="0.5" min="0" defaultValue={result.total_score} required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Ghi chú / Nhận xét thêm</label>
-                  <textarea className="form-textarea" name="note" rows="3" placeholder="Nhận xét chi tiết cho học sinh..." />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowFeedbackModal(false)}>Huỷ</button>
-                <button type="submit" className="btn btn-primary" disabled={savingFeedback}>
-                  {savingFeedback ? 'Đang lưu...' : '💾 Lưu đánh giá'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setShowFeedbackModal(false)}>Huỷ</button>
+              <button type="submit" className="btn btn-primary" disabled={savingFeedback}>
+                {savingFeedback ? 'Đang lưu...' : '💾 Lưu đánh giá'}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );
