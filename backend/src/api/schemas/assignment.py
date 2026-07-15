@@ -7,6 +7,7 @@ class AssignmentBase(BaseModel):
     deadline: datetime
     problem_text: str
     type: str
+    problem_image_url: Optional[str] = None
 
 
 class AssignmentCreate(AssignmentBase):
@@ -17,6 +18,7 @@ class AssignmentUpdate(BaseModel):
     deadline: Optional[datetime] = None
     problem_text: Optional[str] = None
     type: Optional[str] = None
+    problem_image_url: Optional[str] = None
 
 
 class AssignmentResponse(AssignmentBase):

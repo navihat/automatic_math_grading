@@ -4,7 +4,8 @@ from typing import Optional, List
 
 
 class SubmissionBase(BaseModel):
-    image_url: str
+    image_url: Optional[str] = None
+    image_urls: Optional[List[str]] = None
     ocr_text: Optional[str] = None
 
 
@@ -15,6 +16,7 @@ class SubmissionCreate(SubmissionBase):
 
 class SubmissionUpdate(BaseModel):
     image_url: Optional[str] = None
+    image_urls: Optional[List[str]] = None
     ocr_text: Optional[str] = None
 
 

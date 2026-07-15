@@ -22,19 +22,17 @@ _RUBRIC_PROMPT = (
 )
 
 
-def _clean_json_text(text: str) -> str:
-    """Loại bỏ ký tự markdown bọc JSON (nếu có) trước khi parse."""
+def _parse_json(text: str) -> dict:
     text = text.strip()
     if text.startswith("```"):
         lines = text.splitlines()
         if lines[0].startswith("```"):
-            # Bỏ dòng ```json hoặc ```
             lines = lines[1:]
-        if lines[-1].startswith("```"):
-            # Bỏ dòng ``` ở cuối
+        if lines and lines[-1].startswith("```"):
             lines = lines[:-1]
         text = "\n".join(lines).strip()
-    return text
+    result, _ = json.JSONDecoder().raw_decode(text)
+    return result
 
 
 def extract_from_image(image_url: str) -> dict:
@@ -51,7 +49,7 @@ def extract_from_image(image_url: str) -> dict:
 
     client = get_gemini_client()
     response = client.models.generate_content(
-        model="gemini-flash-latest",
+        model="gemini-2.5-flash",
         contents=[
             types.Part.from_bytes(
                 data=file_bytes,
@@ -63,14 +61,14 @@ def extract_from_image(image_url: str) -> dict:
             response_mime_type="application/json",
         ),
     )
-    return json.loads(_clean_json_text(response.text))
+    return _parse_json(response.text)
 
 
 def extract_from_pdf(file_bytes: bytes) -> dict:
     """Gọi Gemini API gửi thẳng file PDF (hỗ trợ cả PDF thường và PDF scan)."""
     client = get_gemini_client()
     response = client.models.generate_content(
-        model="gemini-flash-latest",
+        model="gemini-2.5-flash",
         contents=[
             types.Part.from_bytes(
                 data=file_bytes,
@@ -82,4 +80,4 @@ def extract_from_pdf(file_bytes: bytes) -> dict:
             response_mime_type="application/json",
         ),
     )
-    return json.loads(_clean_json_text(response.text))
+    return _parse_json(response.text)

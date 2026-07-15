@@ -13,6 +13,7 @@ from src.api.routes.assignment import router as assignment_router
 from src.api.routes.submission import router as submission_router
 from src.api.routes.review import router as review_router
 from src.api.routes.auth import router as auth_router
+from src.api.routes.analysis import router as analysis_router
 from src.utils.security import hash_password
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -73,6 +74,7 @@ app.include_router(classroom_router, prefix=settings.API_PREFIX)
 app.include_router(assignment_router, prefix=settings.API_PREFIX)
 app.include_router(submission_router, prefix=settings.API_PREFIX)
 app.include_router(review_router, prefix=settings.API_PREFIX)
+app.include_router(analysis_router, prefix=settings.API_PREFIX)
 
 if __name__ == "__main__":
     import uvicorn

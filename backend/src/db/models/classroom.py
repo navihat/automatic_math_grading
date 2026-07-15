@@ -27,7 +27,7 @@ class Class(Base):
     teacher = relationship("User", back_populates="classes")
 
     # 1-n with students
-    students = relationship("Student", back_populates="class_obj")
+    students = relationship("Student", back_populates="class_obj", cascade="all, delete-orphan")
 
     # n-n with assignments (via classes_assignments junction table)
     assignments = relationship(
@@ -52,4 +52,4 @@ class Student(Base):
     class_obj = relationship("Class", back_populates="students")
 
     # 1-n with submissions
-    submissions = relationship("Submission", back_populates="student")
+    submissions = relationship("Submission", back_populates="student", passive_deletes=True)

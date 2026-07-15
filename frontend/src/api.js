@@ -41,6 +41,19 @@ export const api = {
   createAssignment: (data) => request('/assignments/', { method: 'POST', body: JSON.stringify(data) }),
   updateAssignment: (id, data) => request(`/assignments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteAssignment: (id) => request(`/assignments/${id}`, { method: 'DELETE' }),
+  getAssignmentClasses: (id) => request(`/assignments/${id}/classes`),
+  linkAssignmentClass: (id, classId) => request(`/assignments/${id}/classes`, { method: 'POST', body: JSON.stringify({ class_id: classId }) }),
+  unlinkAssignmentClass: (id, classId) => request(`/assignments/${id}/classes/${classId}`, { method: 'DELETE' }),
+  uploadAssignmentImage: (assignmentId, file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return fetch(`${API_BASE}/assignments/${assignmentId}/problem-image`, { method: 'POST', body: fd })
+      .then(async (r) => {
+        if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'Upload thất bại');
+        return r.json();
+      });
+  },
+  deleteAssignmentImage: (assignmentId) => request(`/assignments/${assignmentId}/problem-image`, { method: 'DELETE' }),
 
   // ── Rubrics ──
   getRubricsByAssignment: (assignmentId) => request(`/rubrics/assignment/${assignmentId}`),
@@ -54,13 +67,14 @@ export const api = {
   updateRubric: (id, data) => request(`/rubrics/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteRubric: (id) => request(`/rubrics/${id}`, { method: 'DELETE' }),
 
-  // ── Submissions & Grading ──
-  gradeSubmission: (formData) =>
-    fetch(`${API_BASE}/submissions/grade`, { method: 'POST', body: formData }).then(async (r) => {
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'Chấm điểm thất bại');
+  // ── Submissions & Analysis ──
+  analyzeSubmission: (formData) =>
+    fetch(`${API_BASE}/analysis/submit`, { method: 'POST', body: formData }).then(async (r) => {
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'Phân tích thất bại');
       return r.json();
     }),
-  regradeSubmission: (submissionId) => request(`/submissions/${submissionId}/regrade`, { method: 'POST' }),
+  generateMilestones: (assignmentId) =>
+    request('/analysis/generate-milestones', { method: 'POST', body: JSON.stringify({ assignment_id: assignmentId }) }),
   getSubmissionsByRubric: (rubricId) => request(`/submissions/rubric/${rubricId}`),
   getSubmissionsByStudent: (studentId) => request(`/submissions/student/${studentId}`),
   getSubmission: (id) => request(`/submissions/${id}`),

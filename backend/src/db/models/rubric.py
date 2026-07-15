@@ -19,4 +19,4 @@ class Rubric(Base):
     assignment = relationship("Assignment", back_populates="rubric")
 
     # 1-n with submissions (One rubric used for multiple submissions)
-    submissions = relationship("Submission", back_populates="rubric")
+    submissions = relationship("Submission", back_populates="rubric", cascade="all, delete-orphan")

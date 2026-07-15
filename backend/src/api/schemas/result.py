@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Any
 
 
 class TeacherFeedbackBase(BaseModel):
@@ -30,7 +30,7 @@ class TeacherFeedbackResponse(TeacherFeedbackBase):
 
 
 class ResultBase(BaseModel):
-    steps_json: Dict[str, Any]
+    steps_json: Optional[Any] = None
     total_score: int
     confidence: float
 
@@ -40,7 +40,7 @@ class ResultCreate(ResultBase):
 
 
 class ResultUpdate(BaseModel):
-    steps_json: Optional[Dict[str, Any]] = None
+    steps_json: Optional[Any] = None
     total_score: Optional[int] = None
     confidence: Optional[float] = None
 

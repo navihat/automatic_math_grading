@@ -10,7 +10,8 @@ class Assignment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     deadline = Column(DateTime(timezone=True), nullable=False)
-    problem_text = Column(Text, nullable=False)  # Problem statement/instructions
+    problem_text = Column(Text, nullable=False)
+    problem_image_url = Column(String(500), nullable=True)
     type = Column(String(50), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -20,7 +21,7 @@ class Assignment(Base):
     teacher = relationship("User", back_populates="assignments")
 
     # 1-1 with rubric (Each assignment has one rubric)
-    rubric = relationship("Rubric", back_populates="assignment", uselist=False)
+    rubric = relationship("Rubric", back_populates="assignment", uselist=False, cascade="all, delete-orphan")
 
     # n-n with classes (via classes_assignments junction table)
     classes = relationship(

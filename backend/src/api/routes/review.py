@@ -19,13 +19,36 @@ def get_results_by_submission(submission_id: int, db: Session = Depends(get_db))
     return result_service.get_results_by_submission(db, submission_id)
 
 
-@router.get("/{result_id}", response_model=ResultResponse)
+@router.get("/{result_id}")
 def get_result(result_id: int, db: Session = Depends(get_db)):
-    """Lấy chi tiết kết quả chấm."""
+    """Lấy chi tiết kết quả chấm (bao gồm toàn bộ pipeline data)."""
     result = result_service.get_result_by_id(db, result_id)
     if not result:
         raise HTTPException(status_code=404, detail="Kết quả không tồn tại.")
-    return result
+    return {
+        "id": result.id,
+        "submission_id": result.submission_id,
+        "session_id": result.session_id,
+        "image_quality": result.image_quality_json,
+        "ocr_text": result.ocr_text,
+        "uncertain_symbols": result.uncertain_symbols,
+        "steps": result.steps_json,
+        "ir": result.ir_json,
+        "verification": result.verification_json,
+        "milestones": result.milestone_json,
+        "misconceptions": result.misconception_json,
+        "feedback": result.feedback_text,
+        "total_score": result.total_score,
+        "total_milestones": result.total_milestones,
+        "confidence": result.confidence,
+        "needs_review": result.needs_review,
+        "teacher_feedback": {
+            "id": result.teacher_feedback.id,
+            "final_score": result.teacher_feedback.final_score,
+            "note": result.teacher_feedback.note,
+        } if result.teacher_feedback else None,
+        "created_at": result.created_at.isoformat() if result.created_at else None,
+    }
 
 
 @router.post("/feedback", response_model=TeacherFeedbackResponse, status_code=201)

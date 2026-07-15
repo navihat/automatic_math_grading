@@ -60,3 +60,49 @@ def delete_assignment(db: Session, assignment_id: int) -> bool:
     db.delete(assignment)
     db.commit()
     return True
+
+
+def link_class(db: Session, assignment_id: int, class_id: int) -> bool:
+    """Gán bài tập cho một lớp. Trả về False nếu không tìm thấy assignment hoặc class."""
+    assignment = get_assignment_by_id(db, assignment_id)
+    if not assignment:
+        return False
+    cls = db.query(Class).filter(Class.id == class_id).first()
+    if not cls:
+        return False
+    if cls not in assignment.classes:
+        assignment.classes.append(cls)
+        db.commit()
+    return True
+
+
+def unlink_class(db: Session, assignment_id: int, class_id: int) -> bool:
+    """Gỡ liên kết bài tập khỏi một lớp. Trả về False nếu không tìm thấy."""
+    assignment = get_assignment_by_id(db, assignment_id)
+    if not assignment:
+        return False
+    cls = db.query(Class).filter(Class.id == class_id).first()
+    if not cls or cls not in assignment.classes:
+        return False
+    assignment.classes.remove(cls)
+    db.commit()
+    return True
+
+
+def get_linked_classes(db: Session, assignment_id: int) -> list:
+    """Lấy danh sách lớp đã được gán cho bài tập."""
+    assignment = get_assignment_by_id(db, assignment_id)
+    if not assignment:
+        return []
+    return assignment.classes
+
+
+def set_problem_image(db: Session, assignment_id: int, image_url: Optional[str]) -> Optional[Assignment]:
+    """Cập nhật hoặc xoá URL ảnh đề bài."""
+    assignment = get_assignment_by_id(db, assignment_id)
+    if not assignment:
+        return None
+    assignment.problem_image_url = image_url
+    db.commit()
+    db.refresh(assignment)
+    return assignment

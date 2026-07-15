@@ -258,6 +258,9 @@ export default function ClassesPage({ teacherId }) {
                   <div className="form-group">
                     <label className="form-label">Mã học sinh</label>
                     <input className="form-input" name="student_code" placeholder="HS001" required />
+                    <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--text-muted)' }}>
+                      Mật khẩu mặc định = Mã học sinh (học sinh đăng nhập lần đầu bằng mã này)
+                    </div>
                   </div>
                 )}
               </div>
