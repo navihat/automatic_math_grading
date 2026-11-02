@@ -1,8 +1,8 @@
-import json
-import io
 import httpx
 from google.genai import types
+from src.core.config import settings
 from src.services.ai.client import get_gemini_client
+from src.services.ai.json_utils import parse_llm_json
 
 # Định dạng output mong muốn (dưới dạng chuỗi template JSON)
 format_output = """{
@@ -22,19 +22,6 @@ _RUBRIC_PROMPT = (
 )
 
 
-def _parse_json(text: str) -> dict:
-    text = text.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].startswith("```"):
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
-    result, _ = json.JSONDecoder().raw_decode(text)
-    return result
-
-
 def extract_from_image(image_url: str) -> dict:
     """Gọi Gemini API để trích xuất rubric từ link ảnh (ví dụ link từ Supabase Storage)."""
     # 1. Tải ảnh từ URL về bộ nhớ (vì Gemini API không hỗ trợ đọc trực tiếp link https:// thông qua URI)
@@ -49,7 +36,7 @@ def extract_from_image(image_url: str) -> dict:
 
     client = get_gemini_client()
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=settings.GEMINI_DIAGNOSTIC_MODEL,
         contents=[
             types.Part.from_bytes(
                 data=file_bytes,
@@ -61,14 +48,14 @@ def extract_from_image(image_url: str) -> dict:
             response_mime_type="application/json",
         ),
     )
-    return _parse_json(response.text)
+    return parse_llm_json(response.text)
 
 
 def extract_from_pdf(file_bytes: bytes) -> dict:
     """Gọi Gemini API gửi thẳng file PDF (hỗ trợ cả PDF thường và PDF scan)."""
     client = get_gemini_client()
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=settings.GEMINI_DIAGNOSTIC_MODEL,
         contents=[
             types.Part.from_bytes(
                 data=file_bytes,
@@ -80,4 +67,4 @@ def extract_from_pdf(file_bytes: bytes) -> dict:
             response_mime_type="application/json",
         ),
     )
-    return _parse_json(response.text)
+    return parse_llm_json(response.text)

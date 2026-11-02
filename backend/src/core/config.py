@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = ""
 
     GEMINI_API_KEY: str = ""
+    # Model per pipeline call (Layer 2-4 recognition vs. Layer 6-8 diagnosis / rubric authoring)
+    GEMINI_OCR_MODEL: str = "gemini-3.1-flash-lite"
+    GEMINI_DIAGNOSTIC_MODEL: str = "gemini-2.5-flash"
 
     @field_validator("ALLOWED_ORIGINS")
     def parse_allowed_origins(cls, v: str) -> List[str]:
