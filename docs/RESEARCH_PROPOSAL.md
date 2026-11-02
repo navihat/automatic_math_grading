@@ -31,7 +31,7 @@ Thứ tự đề xuất: **P2 → P4 → P3 → P1** (P4 và milestone symbolic 
    - `x² = 4 → x = −2` bị chấm **đúng**, còn `x² = 4 → x = 2` bị chấm **sai**. Kết quả phụ thuộc thứ tự nghiệm, và cả hai đều là lỗi mất nghiệm.
    - `x² − 5x + 6 = 0 → x = 2` và `x² = 3x → x = 0` cũng bị chấm **đúng** (mất nghiệm).
    - `√x = x − 2 → x = (x−2)²` bị chấm **đúng** mà không ghi nhận nghĩa vụ loại nghiệm ngoại lai.
-5. **IR do chính LLM viết dưới dạng chuỗi SymPy.** LLM có thể âm thầm "sửa" lỗi của học sinh khi chuyển sang `lhs`/`rhs`. Đây chính là rủi ro *code-verifier mismatch* trong AGENTS.md §16. Hiện không có provenance từ IR về dòng OCR/vị trí ảnh.
+5. **IR do chính LLM viết dưới dạng chuỗi SymPy.** LLM có thể âm thầm "sửa" lỗi của học sinh khi chuyển sang `lhs`/`rhs`. Đây chính là rủi ro *code-verifier mismatch* trong PROBLEM_STATEMENT.md §16. Hiện không có provenance từ IR về dòng OCR/vị trí ảnh.
 6. Không có test nào trước đợt refactor này.
 
 ---
@@ -137,7 +137,7 @@ Milestone **không phải** từng dòng: tính đúng của từng dòng là vi
   - `quote` phải xuất hiện trong dòng OCR `step_no`; nếu không → bác (chống bịa bằng chứng [C1]).
   - `Vague` → `needs_review`.
   - Nếu bước được trích bị L5 gắn INVALID → không được tính "đạt" (SymPy phủ quyết, quyết định khóa #1).
-- Milestone generator (đã tách ra `ai/milestone_generator.py`) sẽ đề xuất `kind`/`check`; **giáo viên duyệt và khóa** trước khi dùng (chống rubric drift, AGENTS.md §16).
+- Milestone generator (đã tách ra `ai/milestone_generator.py`) sẽ đề xuất `kind`/`check`; **giáo viên duyệt và khóa** trước khi dùng (chống rubric drift, PROBLEM_STATEMENT.md §16).
 
 ### 5.3 PRM
 Qwen2.5-Math-PRM-7B đạt khoảng 73.5 F1 trên ProcessBench [C4], nhưng PRM khái quát kém ra ngoài phân bố huấn luyện [D1] và có thể phản ứng với "artifact định dạng" thay vì nội dung toán [C5]. Thêm nữa, 7B cần lượng tử 4-bit mới vừa T4. **Đề xuất: không đưa PRM vào MVP.** Nếu làm ở Phase 2, chỉ dùng như *tín hiệu phụ* cho milestone `judgement`, không bao giờ ghi đè SymPy.
