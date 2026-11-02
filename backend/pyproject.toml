@@ -19,3 +19,12 @@ dependencies = [
     "sympy>=1.14.0",
     "uvicorn>=0.47.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
