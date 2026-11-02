@@ -7,6 +7,7 @@ then returns milestone achievement, misconception detections, and diagnostic fee
 import json
 import logging
 from google.genai import types
+from src.core.config import settings
 from src.services.ai.client import get_gemini_client
 from src.services.ai.json_utils import parse_llm_json
 
@@ -110,7 +111,7 @@ def analyze(
 
     client = get_gemini_client()
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=settings.GEMINI_DIAGNOSTIC_MODEL,
         contents=[prompt],
         config=types.GenerateContentConfig(response_mime_type="application/json"),
     )
@@ -178,7 +179,7 @@ def generate_milestones(
         contents = [f"ĐỀ BÀI:\n{problem_text}\n\n{_MILESTONE_PROMPT}"]
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=settings.GEMINI_DIAGNOSTIC_MODEL,
         contents=contents,
         config=types.GenerateContentConfig(response_mime_type="application/json"),
     )

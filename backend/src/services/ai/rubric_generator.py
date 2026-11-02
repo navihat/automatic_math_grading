@@ -1,5 +1,6 @@
 import httpx
 from google.genai import types
+from src.core.config import settings
 from src.services.ai.client import get_gemini_client
 from src.services.ai.json_utils import parse_llm_json
 
@@ -35,7 +36,7 @@ def extract_from_image(image_url: str) -> dict:
 
     client = get_gemini_client()
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=settings.GEMINI_DIAGNOSTIC_MODEL,
         contents=[
             types.Part.from_bytes(
                 data=file_bytes,
@@ -54,7 +55,7 @@ def extract_from_pdf(file_bytes: bytes) -> dict:
     """Gọi Gemini API gửi thẳng file PDF (hỗ trợ cả PDF thường và PDF scan)."""
     client = get_gemini_client()
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=settings.GEMINI_DIAGNOSTIC_MODEL,
         contents=[
             types.Part.from_bytes(
                 data=file_bytes,

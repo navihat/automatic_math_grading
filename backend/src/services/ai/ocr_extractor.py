@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 from google.genai import types
+from src.core.config import settings
 from src.services.ai.client import get_gemini_client
 from src.services.ai.json_utils import parse_llm_json
 
@@ -99,7 +100,7 @@ def extract(images: list[tuple[bytes, str]]) -> dict:
     parts: list = [types.Part.from_bytes(data=b, mime_type=m) for b, m in images]
     parts.append(_PROMPT.format(format=_FORMAT))
     response = client.models.generate_content(
-        model="gemini-3.1-flash-lite",
+        model=settings.GEMINI_OCR_MODEL,
         contents=parts,
         config=types.GenerateContentConfig(response_mime_type="application/json"),
     )
