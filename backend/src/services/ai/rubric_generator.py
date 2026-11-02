@@ -1,8 +1,7 @@
-import json
-import io
 import httpx
 from google.genai import types
 from src.services.ai.client import get_gemini_client
+from src.services.ai.json_utils import parse_llm_json
 
 # Định dạng output mong muốn (dưới dạng chuỗi template JSON)
 format_output = """{
@@ -20,19 +19,6 @@ _RUBRIC_PROMPT = (
     "{format_output}\n"
     "Chỉ trả về JSON thuần, không dùng markdown."
 )
-
-
-def _parse_json(text: str) -> dict:
-    text = text.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].startswith("```"):
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
-    result, _ = json.JSONDecoder().raw_decode(text)
-    return result
 
 
 def extract_from_image(image_url: str) -> dict:
@@ -61,7 +47,7 @@ def extract_from_image(image_url: str) -> dict:
             response_mime_type="application/json",
         ),
     )
-    return _parse_json(response.text)
+    return parse_llm_json(response.text)
 
 
 def extract_from_pdf(file_bytes: bytes) -> dict:
@@ -80,4 +66,4 @@ def extract_from_pdf(file_bytes: bytes) -> dict:
             response_mime_type="application/json",
         ),
     )
-    return _parse_json(response.text)
+    return parse_llm_json(response.text)

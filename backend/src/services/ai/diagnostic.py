@@ -8,6 +8,7 @@ import json
 import logging
 from google.genai import types
 from src.services.ai.client import get_gemini_client
+from src.services.ai.json_utils import parse_llm_json
 
 logger = logging.getLogger(__name__)
 
@@ -67,17 +68,6 @@ Trả về JSON thuần (không markdown) đúng cấu trúc:
 Chỉ trả JSON, không có text nào khác."""
 
 
-def _parse_json(text: str) -> dict:
-    text = text.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()
-        lines = lines[1:] if lines[0].startswith("```") else lines
-        lines = lines[:-1] if lines and lines[-1].startswith("```") else lines
-        text = "\n".join(lines).strip()
-    result, _ = json.JSONDecoder().raw_decode(text)
-    return result
-
-
 def analyze(
     problem_statement: str,
     milestones: list[dict],
@@ -130,7 +120,7 @@ def analyze(
         raise ValueError("AI không trả về kết quả. Kiểm tra lại GEMINI_API_KEY.")
 
     try:
-        result = _parse_json(response.text)
+        result = parse_llm_json(response.text)
     except json.JSONDecodeError as e:
         logger.error("Không parse được JSON từ Gemini: %s\nRaw: %s", e, response.text[:500])
         raise ValueError(f"AI trả về định dạng không hợp lệ: {e}")
@@ -198,7 +188,7 @@ def generate_milestones(
         raise ValueError("AI không trả về kết quả. Kiểm tra lại GEMINI_API_KEY.")
 
     try:
-        data = _parse_json(response.text)
+        data = parse_llm_json(response.text)
     except json.JSONDecodeError as e:
         logger.error("Không parse được JSON từ Gemini: %s\nRaw: %s", e, response.text[:500])
         raise ValueError(f"AI trả về định dạng không hợp lệ: {e}")
