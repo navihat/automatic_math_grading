@@ -9,7 +9,7 @@ from src.core.config import UPLOAD_DIR
 from src.core.database import get_db
 from src.db.models.assignment import Assignment
 from src.services import pipeline
-from src.services.ai.diagnostic import generate_milestones
+from src.services.ai.milestone_generator import generate_milestones
 
 logger = logging.getLogger(__name__)
 
