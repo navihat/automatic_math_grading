@@ -1,6 +1,9 @@
 # Automatic Math Grading
 
-Hệ thống chấm điểm bài toán viết tay tự động, gồm 2 thành phần:
+Hệ thống AI hỗ trợ giáo viên chẩn đoán lời giải đại số THCS viết tay (tiếng Việt).
+Không phải máy chấm điểm tự động: giáo viên quyết định điểm cuối.
+
+Gồm 2 thành phần:
 - **Backend**: FastAPI + SQLAlchemy + Alembic
 - **Frontend**: React + Vite
 
@@ -37,7 +40,7 @@ DATABASE_URL=sqlite:///./database.db
 API_PREFIX=/api
 DEBUG=True
 ALLOWED_ORIGINS=http://localhost:5173
-OPENAI_API_KEY=your-key-here
+GEMINI_API_KEY=your-key-here
 ```
 
 Chạy migration:
@@ -66,27 +69,23 @@ Truy cập: http://localhost:5173
 
 ---
 
-## Model AI
-
-Weights không được commit lên git. Xem hướng dẫn tải về tại [`data/models/README.md`](data/models/README.md).
-
----
-
 ## Cấu trúc dự án
 
 ```
 automatic_math_grading/
 ├── backend/
-│   ├── app/
-│   │   ├── core/          # config, database
-│   │   ├── models/        # SQLAlchemy models
-│   │   ├── schemas/       # Pydantic schemas
-│   │   ├── services/      # business logic
-│   │   ├── routes/        # API endpoints
-│   │   └── utils/         
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── routes/    # FastAPI endpoints
+│   │   │   └── schemas/   # Pydantic schemas
+│   │   ├── core/          # config
+│   │   ├── db/models/     # SQLAlchemy models
+│   │   ├── services/      # pipeline chẩn đoán, Gemini, SymPy verifier
+│   │   └── utils/
+│   ├── tests/             # pytest
 │   └── migrations/        # Alembic migrations
 ├── frontend/              # React + Vite
 └── data/
-    ├── models/            # weights AI (không commit)
+    ├── storage/
     └── uploads/           # ảnh bài nộp (không commit)
 ```
